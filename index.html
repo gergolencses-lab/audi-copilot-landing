@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maintenance Copilot — a tudás a szemüvegben</title>
+<meta name="description" content="AR-alapú karbantartási copilot: hangvezérelt diagnózis, lépésről lépésre vezetés, munkalap-generálás — a kéz és a szem végig a gépen marad.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#05070a;
+  --ice:#9BE8FF;
+  --red:#FF3355;
+  --ok:#45E0A0;
+  --txt:rgba(255,255,255,.92);
+  --txt-dim:rgba(255,255,255,.55);
+  --glass:linear-gradient(165deg, rgba(18,23,30,.60), rgba(9,12,16,.44));
+  --glass-solid:linear-gradient(165deg, rgba(18,23,30,.92), rgba(9,12,16,.88));
+  --edge:rgba(255,255,255,.16);
+  --edge-top:rgba(255,255,255,.30);
+  --ease:cubic-bezier(0.75,0.02,0.5,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--txt);
+  font-family:'Space Grotesk',-apple-system,system-ui,sans-serif;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:rgba(155,232,255,.25)}
+
+/* ---------- glass primitive ---------- */
+.glass{
+  background:var(--glass);
+  backdrop-filter:blur(18px) saturate(150%);
+  -webkit-backdrop-filter:blur(18px) saturate(150%);
+  border:1px solid var(--edge);
+  border-top-color:var(--edge-top);
+  border-radius:18px;
+  position:relative;
+  overflow:hidden;
+}
+.glass::before{
+  content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.055) 42%, rgba(255,255,255,.10) 46%, rgba(255,255,255,.055) 50%, transparent 62%);
+}
+
+/* ---------- HERO ---------- */
+#hero{height:420vh;position:relative}
+#hero-sticky{position:sticky;top:0;height:100vh;overflow:hidden}
+#hero-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#hero-title{
+  position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;
+  text-align:center;pointer-events:none;transition:opacity .3s linear;padding:0 24px;
+}
+#hero-title .kicker{
+  font-size:13px;letter-spacing:.42em;text-transform:uppercase;color:var(--ice);
+  opacity:.85;margin-bottom:18px;font-weight:500;
+}
+#hero-title h1{
+  font-size:clamp(38px,7vw,84px);font-weight:600;letter-spacing:.04em;line-height:1.04;
+  text-shadow:0 0 60px rgba(155,232,255,.18);
+}
+#hero-title .sub{
+  margin-top:22px;font-size:clamp(15px,1.6vw,19px);color:var(--txt-dim);max-width:560px;line-height:1.55;font-weight:300;
+}
+#scroll-hint{
+  position:absolute;bottom:34px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  color:var(--txt-dim);font-size:11px;letter-spacing:.34em;text-transform:uppercase;
+  transition:opacity .3s linear;
+}
+#scroll-hint .line{width:1px;height:44px;background:linear-gradient(to bottom, var(--ice), transparent);animation:drop 1.8s var(--ease) infinite}
+@keyframes drop{0%{transform:scaleY(0);transform-origin:top}45%{transform:scaleY(1);transform-origin:top}55%{transform:scaleY(1);transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+.hero-card{
+  position:absolute;width:min(360px,82vw);padding:26px 28px;
+  opacity:0;transform:translateY(40px);
+  transition:opacity .45s var(--ease), transform .45s var(--ease);
+  pointer-events:none;
+}
+.hero-card .idx{font-size:11px;letter-spacing:.32em;color:var(--ice);text-transform:uppercase;margin-bottom:10px;font-weight:500}
+.hero-card h3{font-size:22px;font-weight:600;margin-bottom:8px;letter-spacing:.01em}
+.hero-card p{font-size:14.5px;line-height:1.55;color:var(--txt-dim);font-weight:300}
+.hero-card .tick{position:absolute;top:26px;right:24px;width:8px;height:8px;border-radius:50%;background:var(--ice);box-shadow:0 0 14px rgba(155,232,255,.8)}
+#card-1{top:16%;left:6%}
+#card-2{top:20%;right:6%}
+#card-3{bottom:15%;left:8%}
+@media(max-width:760px){
+  #card-1{top:9%;left:5%}
+  #card-2{top:auto;bottom:22%;right:5%}
+  #card-3{bottom:8%;left:5%}
+}
+
+/* ---------- SECTIONS shared ---------- */
+section.block{padding:120px 24px;position:relative}
+.section-head{max-width:960px;margin:0 auto 44px}
+.section-head .kicker{font-size:12px;letter-spacing:.4em;text-transform:uppercase;color:var(--ice);margin-bottom:14px;font-weight:500}
+.section-head h2{font-size:clamp(28px,4vw,44px);font-weight:600;letter-spacing:.02em}
+.section-head p{margin-top:12px;color:var(--txt-dim);font-size:16px;font-weight:300;max-width:640px;line-height:1.6}
+
+/* ---------- FILM ---------- */
+#film .frame{max-width:960px;margin:0 auto;padding:14px}
+#film video{width:100%;display:block;border-radius:10px;background:#000}
+
+/* ---------- DEMO ---------- */
+#demo{
+  min-height:100vh;padding:100px 24px 70px;
+  background:
+    linear-gradient(to bottom, var(--bg) 0%, rgba(5,7,10,.55) 14%, rgba(5,7,10,.42) 55%, rgba(5,7,10,.88) 100%),
+    url('assets/bg-demo.jpg') center 38%/cover no-repeat fixed;
+}
+@media(max-width:900px){#demo{background-attachment:scroll}}
+#demo-layout{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);gap:22px;align-items:start}
+@media(max-width:900px){#demo-layout{grid-template-columns:1fr}}
+
+#chat-panel{display:flex;flex-direction:column;height:min(640px,72vh)}
+#chat-log{flex:1;overflow-y:auto;padding:22px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:rgba(155,232,255,.25) transparent}
+.msg{max-width:88%;padding:12px 16px;border-radius:14px;font-size:15px;line-height:1.55;font-weight:300;animation:msgin .3s var(--ease)}
+@keyframes msgin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.msg.user{align-self:flex-end;background:rgba(155,232,255,.12);border:1px solid rgba(155,232,255,.22)}
+.msg.bot{align-self:flex-start;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
+.msg.bot strong{font-weight:600;color:#fff}
+.msg .opts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.opt-chip{
+  border:1px solid rgba(155,232,255,.35);background:rgba(155,232,255,.07);color:var(--txt);
+  padding:8px 14px;border-radius:999px;font-size:13.5px;font-family:inherit;cursor:pointer;
+  transition:background .2s var(--ease), transform .2s var(--ease);
+}
+.opt-chip:hover{background:rgba(155,232,255,.16);transform:translateY(-1px)}
+.opt-chip:disabled{opacity:.4;cursor:default;transform:none}
+.img-chip{
+  display:flex;align-items:center;gap:10px;margin-top:12px;padding:9px 13px;border-radius:12px;
+  border:1px solid rgba(155,232,255,.3);background:rgba(155,232,255,.06);cursor:pointer;
+  font-size:13.5px;color:var(--ice);font-family:inherit;transition:background .2s;
+}
+.img-chip:hover{background:rgba(155,232,255,.14)}
+.img-chip svg{flex:none}
+.summary-card{margin-top:12px;border:1px solid rgba(69,224,160,.35);border-radius:14px;padding:14px 16px;background:rgba(69,224,160,.06)}
+.summary-card .sc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.summary-card .sc-title{font-weight:600;font-size:14px;letter-spacing:.06em;text-transform:uppercase}
+.summary-card .sc-badge{font-size:11px;letter-spacing:.18em;color:var(--ok);border:1px solid rgba(69,224,160,.5);padding:3px 9px;border-radius:999px}
+.summary-card li{list-style:none;font-size:13.5px;padding:4px 0;color:var(--txt-dim);display:flex;gap:8px}
+.summary-card li::before{content:'✓';color:var(--ok);font-weight:600}
+.summary-card .sc-note{margin-top:8px;font-size:12px;color:var(--txt-dim);font-style:italic}
+
+#voicebar{padding:14px 18px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:12px}
+#mic-btn{
+  flex:none;width:58px;height:58px;border-radius:50%;border:1px solid rgba(155,232,255,.4);
+  background:rgba(155,232,255,.1);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:background .2s, box-shadow .2s;position:relative;touch-action:none;
+  -webkit-user-select:none;user-select:none;
+}
+#mic-btn svg{width:24px;height:24px;stroke:var(--ice);fill:none;stroke-width:1.8;stroke-linecap:round}
+#mic-btn.rec{background:rgba(255,51,85,.18);border-color:rgba(255,51,85,.6);box-shadow:0 0 0 0 rgba(255,51,85,.4);animation:pulse 1.4s infinite}
+#mic-btn.rec svg{stroke:var(--red)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,51,85,.35)}70%{box-shadow:0 0 0 16px rgba(255,51,85,0)}100%{box-shadow:0 0 0 0 rgba(255,51,85,0)}}
+#text-input{
+  flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:12px;
+  color:var(--txt);font-family:inherit;font-size:15px;padding:13px 16px;outline:none;font-weight:300;
+}
+#text-input:focus{border-color:rgba(155,232,255,.4)}
+#text-input::placeholder{color:rgba(255,255,255,.3)}
+#send-btn{
+  flex:none;border:none;background:none;cursor:pointer;padding:10px;color:var(--ice);
+}
+#send-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#status-line{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--txt-dim);padding:0 22px 12px;min-height:16px;transition:color .2s}
+#status-line.active{color:var(--ice)}
+#status-line.err{color:var(--red)}
+
+#image-panel{position:sticky;top:24px;padding:18px;display:none;flex-direction:column;gap:12px}
+#image-panel.open{display:flex}
+#image-panel img{width:100%;border-radius:10px;background:#fff}
+#image-panel .cap{font-size:13.5px;color:var(--txt-dim);line-height:1.5}
+#image-panel .close{
+  position:absolute;top:12px;right:12px;z-index:2;border:1px solid rgba(255,255,255,.2);background:rgba(9,12,16,.7);
+  color:var(--txt);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;line-height:1;font-family:inherit;
+}
+@media(max-width:900px){
+  #image-panel{position:fixed;inset:auto 12px 12px 12px;z-index:60;max-height:70vh;overflow:auto;box-shadow:0 -10px 60px rgba(0,0,0,.6)}
+}
+
+/* ---------- FOOTER ---------- */
+footer{padding:70px 24px 46px;text-align:center;border-top:1px solid rgba(255,255,255,.06)}
+footer .rings{opacity:.5;margin-bottom:18px}
+footer p{font-size:13px;color:var(--txt-dim);letter-spacing:.08em;font-weight:300}
+footer .zel{margin-top:6px;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:rgba(255,255,255,.35)}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ ACT 1 · HERO ═══════════ -->
+<div id="hero">
+  <div id="hero-sticky">
+    <canvas id="hero-canvas"></canvas>
+    <div id="hero-title">
+      <div class="kicker">AUDI · AR Maintenance</div>
+      <h1>MAINTENANCE<br>COPILOT</h1>
+      <div class="sub">A karbantartó keze és szeme a gépen.<br>A tudás a szemüvegben.</div>
+    </div>
+    <div class="hero-card glass" id="card-1" data-in="0.16" data-out="0.38">
+      <div class="tick"></div>
+      <div class="idx">01 · Felismerés</div>
+      <h3>Felismeri a gépet</h3>
+      <p>Ránézel — és a Copilot már tudja, melyik kazán áll előtted, és mi a nyitott hibajegye.</p>
+    </div>
+    <div class="hero-card glass" id="card-2" data-in="0.42" data-out="0.64">
+      <div class="tick"></div>
+      <div class="idx">02 · Diagnózis</div>
+      <h3>Leolvassa a hibakódot</h3>
+      <p>Error hetven a kijelzőn. A diagnózis kimondva érkezik — nem kikeresve, nem lapozgatva.</p>
+    </div>
+    <div class="hero-card glass" id="card-3" data-in="0.68" data-out="0.92">
+      <div class="tick"></div>
+      <div class="idx">03 · Vezetés</div>
+      <h3>Végigvezet a javításon</h3>
+      <p>Lépésről lépésre, ábrákkal és munkalappal — miközben a kezed végig a gépen marad.</p>
+    </div>
+    <div id="scroll-hint"><span>Görgess</span><div class="line"></div></div>
+  </div>
+</div>
+
+<!-- ═══════════ ACT 2 · FILM ═══════════ -->
+<section class="block" id="film">
+  <div class="section-head">
+    <div class="kicker">A vízió</div>
+    <h2>41 másodperc a műhely jövőjéből</h2>
+    <p>Első személyben, a szemüvegen át: felismerés, diagnózis, vezetett javítás, lezárt munkalap.</p>
+  </div>
+  <div class="frame glass">
+    <video controls preload="none" poster="assets/film-poster.jpg" src="assets/film.mp4"></video>
+  </div>
+</section>
+
+<!-- ═══════════ ACT 3 · LIVE DEMO ═══════════ -->
+<section id="demo">
+  <div class="section-head">
+    <div class="kicker">Élő demo</div>
+    <h2>Próbáld ki — most</h2>
+    <p>Ez nem mockup: a bot él. A Copilot mindig annak a gépnek a gépkönyvét tölti be, amelyik előtt állsz — ma egy MIKA-6E KON kazánét, holnap egy présgépét vagy robotcelláét. Nyomd meg és tartsd a mikrofont, vagy írj. A kazán kedvenc hibája az <strong>Error + 70°</strong>.</p>
+  </div>
+  <div id="demo-layout">
+    <div class="glass" id="chat-panel">
+      <div id="chat-log"></div>
+      <div id="status-line"></div>
+      <div id="voicebar">
+        <button id="mic-btn" aria-label="Nyomd és tartsd a beszédhez">
+          <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+        </button>
+        <input id="text-input" type="text" placeholder="…vagy írd ide" autocomplete="off">
+        <button id="send-btn" aria-label="Küldés"><svg viewBox="0 0 24 24"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg></button>
+      </div>
+    </div>
+    <div class="glass" id="image-panel">
+      <button class="close" aria-label="Bezárás">×</button>
+      <img id="panel-img" alt="">
+      <div class="cap" id="panel-cap"></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="rings">
+    <svg width="74" height="26" viewBox="0 0 264.583 93.418" xmlns="http://www.w3.org/2000/svg" fill="rgba(255,255,255,.88)">
+      <path transform="translate(0,-203.58223)" d="m 217.27171,203.58216 c -10.54715,0 -20.34094,3.46549 -28.32665,9.3418 -7.98576,-5.87631 -17.77956,-9.3418 -28.32671,-9.3418 -10.54715,0 -20.341,3.46549 -28.32671,9.3418 -7.98571,-5.87631 -17.62882,-9.3418 -28.32666,-9.3418 -10.547205,0 -20.340999,3.46549 -28.326706,9.3418 -7.835023,-5.87631 -17.628873,-9.3418 -28.32671,-9.3418 C 21.24499,203.58216 0,224.52584 0,250.29105 c 0,25.76526 21.24499,46.70894 47.311564,46.70894 10.54721,0 20.341004,-3.46555 28.32671,-9.3418 7.985707,5.87625 17.779501,9.3418 28.326706,9.3418 10.54716,0 20.34095,-3.46555 28.32666,-9.3418 7.83508,5.87625 17.62887,9.3418 28.32671,9.3418 10.54715,0 20.34095,-3.46555 28.32671,-9.3418 7.83502,5.87625 17.62882,9.3418 28.32665,9.3418 26.06658,0 47.31162,-20.94368 47.31162,-46.70894 0,-25.76521 -21.24504,-46.70889 -47.31162,-46.70889 z m -28.32665,70.81675 c -5.72563,-6.47899 -9.19112,-14.91675 -9.19112,-24.10786 0,-9.19112 3.46549,-17.62882 9.19112,-24.10781 5.72557,6.47899 9.19106,14.91669 9.19106,24.10781 0,9.19111 -3.46549,17.62887 -9.19106,24.10786 z m -56.65342,0 c -5.72557,-6.47899 -9.19112,-14.91675 -9.19112,-24.10786 0,-9.19112 3.46555,-17.62882 9.19112,-24.10781 5.72563,6.47899 9.19112,14.91669 9.19112,24.10781 0,9.19111 -3.46549,17.62887 -9.19112,24.10786 z m -56.653366,0 c -5.725626,-6.47899 -9.191116,-14.91675 -9.191116,-24.10786 0,-9.19112 3.46549,-17.62882 9.191116,-24.10781 5.725627,6.47899 9.191117,14.91669 9.191117,24.10781 0.150911,9.19111 -3.46549,17.62887 -9.191117,24.10786 z M 9.7937934,250.29105 c 0,-20.34095 16.8754566,-36.9151 37.5177706,-36.9151 7.684397,0 14.916744,2.26014 20.94368,6.32831 -7.232347,8.13639 -11.60188,18.83422 -11.60188,30.58679 0,11.75256 4.369533,22.4504 11.60188,30.58679 -6.026936,3.91754 -13.1086,6.3283 -20.94368,6.3283 -20.642314,0 -37.5177706,-16.57409 -37.5177706,-36.91509 z m 73.2275116,30.58679 c 7.232346,-8.13639 11.60188,-18.83423 11.60188,-30.58679 0,-11.75257 -4.369534,-22.4504 -11.60188,-30.58679 6.026936,-3.91754 13.1086,-6.32831 20.943675,-6.32831 7.83503,0 14.91669,2.26014 20.94363,6.32831 -7.23235,8.13639 -11.75257,18.83422 -11.75257,30.58679 0,11.75256 4.3696,22.4504 11.75257,30.58679 -6.02694,3.91754 -13.1086,6.3283 -20.94363,6.3283 -7.684392,0 -14.916739,-2.41076 -20.943675,-6.3283 z m 56.653365,0 c 7.23235,-8.13639 11.75256,-18.83423 11.75256,-30.58679 0,-11.75257 -4.36953,-22.4504 -11.75256,-30.58679 6.02694,-3.91754 13.10866,-6.32831 20.94368,-6.32831 7.83502,0 14.91669,2.26014 20.94368,6.32831 -7.23235,8.13639 -11.75256,18.83422 -11.75256,30.58679 0,11.75256 4.36953,22.4504 11.75256,30.58679 -6.02699,3.91754 -13.10866,6.3283 -20.94368,6.3283 -7.83502,0 -14.91674,-2.41076 -20.94368,-6.3283 z m 77.59704,6.3283 c -7.68434,0 -14.91668,-2.26008 -20.94368,-6.3283 7.23235,-8.13639 11.75257,-18.83423 11.75257,-30.58679 0,-11.75257 -4.36954,-22.4504 -11.75257,-30.58679 6.027,-3.91754 13.10866,-6.32831 20.94368,-6.32831 20.64232,0 37.51783,16.57415 37.51783,36.9151 0,20.341 -16.87551,36.91509 -37.51783,36.91509 z"/>
+    </svg>
+  </div>
+  <p>AUDI Maintenance Copilot — demo</p>
+  <p class="zel">ZEL Group</p>
+</footer>
+
+<script>
+/* ═══════════ CONFIG ═══════════ */
+const PROXY = 'https://audi-copilot-proxy.gergo-lencses.workers.dev';
+const IMG_BASE = 'assets/gepkonyv/';
+const FRAMES = 96;
+
+/* ═══════════ ACT 1 · scroll scrub ═══════════ */
+const canvas = document.getElementById('hero-canvas');
+const ctx = canvas.getContext('2d');
+const imgs = []; let loaded = 0, curFrame = -1;
+for (let i = 0; i < FRAMES; i++) {
+  const im = new Image();
+  im.src = `assets/frames/f-${String(i).padStart(3,'0')}.webp`;
+  im.onload = () => { if (++loaded === 1 || i === curFrame) drawFrame(bestFrame()); };
+  imgs.push(im);
+}
+function sizeCanvas() {
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr;
+  drawFrame(bestFrame(), true);
+}
+function heroProgress() {
+  const track = document.getElementById('hero');
+  const r = track.getBoundingClientRect();
+  return Math.min(1, Math.max(0, -r.top / (track.offsetHeight - innerHeight)));
+}
+function bestFrame() { return Math.min(FRAMES - 1, Math.round(heroProgress() * (FRAMES - 1))); }
+function drawFrame(f, force) {
+  if (f === curFrame && !force) return;
+  const im = imgs[f];
+  if (!im || !im.complete || !im.naturalWidth) return;
+  curFrame = f;
+  const cw = canvas.width, ch = canvas.height;
+  const s = Math.max(cw / im.naturalWidth, ch / im.naturalHeight);
+  const w = im.naturalWidth * s, h = im.naturalHeight * s;
+  ctx.fillStyle = '#05070a'; ctx.fillRect(0, 0, cw, ch);
+  ctx.drawImage(im, (cw - w) / 2, (ch - h) / 2, w, h);
+}
+function onScroll() {
+  const p = heroProgress();
+  drawFrame(Math.min(FRAMES - 1, Math.round(p * (FRAMES - 1))));
+  document.getElementById('hero-title').style.opacity = Math.max(0, 1 - p / 0.12);
+  document.getElementById('scroll-hint').style.opacity = Math.max(0, 1 - p / 0.06);
+  document.querySelectorAll('.hero-card').forEach(el => {
+    const a = +el.dataset.in, b = +el.dataset.out;
+    const on = p > a && p < b;
+    el.style.opacity = on ? 1 : 0;
+    el.style.transform = on ? 'translateY(0)' : 'translateY(40px)';
+  });
+}
+addEventListener('scroll', () => requestAnimationFrame(onScroll), { passive: true });
+addEventListener('resize', sizeCanvas);
+sizeCanvas(); onScroll();
+
+/* ═══════════ ACT 3 · live demo ═══════════ */
+const log = document.getElementById('chat-log');
+const statusLine = document.getElementById('status-line');
+const micBtn = document.getElementById('mic-btn');
+const input = document.getElementById('text-input');
+const history = [];
+let busy = false;
+let player = new Audio();
+
+function setStatus(t, cls) {
+  statusLine.textContent = t || '';
+  statusLine.className = cls || '';
+}
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function md(s) {
+  return esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+}
+function scrollLog() { log.scrollTop = log.scrollHeight; }
+
+const blockRe = /<<(OPTIONS|IMAGE|SUMMARY)>>([\s\S]*?)<<\/\1>>/g;
+function stripBlocks(s) {
+  s = s.replace(blockRe, ' ');
+  const open = s.indexOf('<<');
+  if (open !== -1) s = s.slice(0, open);
+  return s;
+}
+function parseSegments(s) {
+  const parts = []; let last = 0; let m;
+  blockRe.lastIndex = 0;
+  while ((m = blockRe.exec(s)) !== null) {
+    if (m.index > last) parts.push({ type: 'text', content: s.slice(last, m.index) });
+    parts.push({ type: m[1], content: m[2].trim() });
+    last = blockRe.lastIndex;
+  }
+  if (last < s.length) parts.push({ type: 'text', content: s.slice(last) });
+  return parts;
+}
+
+function showImage(path, caption) {
+  const panel = document.getElementById('image-panel');
+  document.getElementById('panel-img').src = IMG_BASE + path;
+  document.getElementById('panel-cap').textContent = caption || '';
+  panel.classList.add('open');
+}
+document.querySelector('#image-panel .close').onclick = () =>
+  document.getElementById('image-panel').classList.remove('open');
+
+function renderBot(el, raw) {
+  let html = '';
+  for (const part of parseSegments(raw)) {
+    if (part.type === 'text') {
+      const t = part.content.trim();
+      if (t) html += `<div>${md(t)}</div>`;
+    } else if (part.type === 'OPTIONS') {
+      try {
+        const opts = JSON.parse(part.content);
+        html += '<div class="opts">' + opts.map(o =>
+          `<button class="opt-chip" data-label="${esc(o.label)}">${o.emoji ? esc(o.emoji) + ' ' : ''}${esc(o.label)}</button>`
+        ).join('') + '</div>';
+      } catch {}
+    } else if (part.type === 'IMAGE') {
+      try {
+        const im = JSON.parse(part.content);
+        html += `<button class="img-chip" data-path="${esc(im.path)}" data-cap="${esc(im.caption || im.alt || '')}">` +
+          `<svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>` +
+          `${esc(im.caption || im.alt || 'Ábra megnyitása')}</button>`;
+      } catch {}
+    } else if (part.type === 'SUMMARY') {
+      try {
+        const sc = JSON.parse(part.content);
+        html += `<div class="summary-card"><div class="sc-head"><span class="sc-title">${esc(sc.title || 'Munkalap')}</span>` +
+          `<span class="sc-badge">${esc(sc.status || 'LEZÁRVA')}</span></div><ul>` +
+          (sc.items || []).map(i => `<li>${esc(i)}</li>`).join('') + '</ul>' +
+          (sc.note ? `<div class="sc-note">${esc(sc.note)}</div>` : '') + '</div>';
+      } catch {}
+    }
+  }
+  el.innerHTML = html;
+  el.querySelectorAll('.opt-chip').forEach(b => b.onclick = () => { if (!busy) sendMessage(b.dataset.label); });
+  el.querySelectorAll('.img-chip').forEach(b => {
+    b.onclick = () => showImage(b.dataset.path, b.dataset.cap);
+  });
+  // az első kép automatikusan kinyílik — a lényeg: a kép KÜLÖN, nagyban
+  const first = el.querySelector('.img-chip');
+  if (first) showImage(first.dataset.path, first.dataset.cap);
+}
+
+function addMsg(cls) {
+  const el = document.createElement('div');
+  el.className = 'msg ' + cls;
+  log.appendChild(el); scrollLog();
+  return el;
+}
+
+async function speak(raw) {
+  let t = stripBlocks(raw).replace(/\*\*/g, '').replace(/\s+/g, ' ').trim();
+  if (!t) return;
+  if (t.length > 580) t = t.slice(0, 580);
+  try {
+    const r = await fetch(PROXY + '/tts', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: t }),
+    });
+    if (!r.ok) return;
+    const blob = await r.blob();
+    player.src = URL.createObjectURL(blob);
+    setStatus('Beszél…', 'active');
+    player.onended = () => setStatus('');
+    await player.play().catch(() => setStatus(''));
+  } catch { setStatus(''); }
+}
+
+async function sendMessage(text) {
+  if (busy || !text.trim()) return;
+  busy = true;
+  player.pause();
+  const userEl = addMsg('user');
+  userEl.textContent = text;
+  history.push({ role: 'user', content: text });
+  const botEl = addMsg('bot');
+  botEl.innerHTML = '<div style="opacity:.5">…</div>';
+  setStatus('Gondolkodik…', 'active');
+
+  let full = '';
+  try {
+    const r = await fetch(PROXY + '/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: history.slice(-20) }),
+    });
+    if (r.status === 429) throw new Error('rate');
+    if (!r.ok) throw new Error('http' + r.status);
+    const reader = r.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue;
+        let ev; try { ev = JSON.parse(line.slice(5)); } catch { continue; }
+        if (ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'text_delta') {
+          full += ev.delta.text;
+          const live = stripBlocks(full).trim();
+          if (live) { botEl.innerHTML = `<div>${md(live)}</div>`; scrollLog(); }
+        } else if (ev.type === 'error') {
+          throw new Error(ev.error && ev.error.type || 'stream');
+        }
+      }
+    }
+    history.push({ role: 'assistant', content: full });
+    renderBot(botEl, full);
+    scrollLog();
+    setStatus('');
+    speak(full);
+  } catch (e) {
+    botEl.innerHTML = `<div style="color:var(--red)">${
+      e.message === 'rate' ? 'Sok kérés fut egyszerre — várj egy percet, aztán próbáld újra.'
+      : 'Hoppá, megszakadt a kapcsolat. Próbáld újra.'}</div>`;
+    history.pop();
+    setStatus('', '');
+  }
+  busy = false;
+}
+
+/* text input */
+document.getElementById('send-btn').onclick = () => { const t = input.value; input.value = ''; sendMessage(t); };
+input.addEventListener('keydown', e => { if (e.key === 'Enter') { const t = input.value; input.value = ''; sendMessage(t); } });
+
+/* ---- push-to-talk ---- */
+let rec = null, chunks = [], recStream = null;
+function recMime() {
+  if (window.MediaRecorder) {
+    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) return 'audio/webm;codecs=opus';
+    if (MediaRecorder.isTypeSupported('audio/mp4')) return 'audio/mp4';
+  }
+  return '';
+}
+async function startRec() {
+  if (busy || rec) return;
+  try {
+    recStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch {
+    setStatus('Mikrofon-engedély kell a hangvezérléshez', 'err');
+    return;
+  }
+  chunks = [];
+  const mime = recMime();
+  rec = new MediaRecorder(recStream, mime ? { mimeType: mime } : undefined);
+  rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+  rec.onstop = async () => {
+    recStream.getTracks().forEach(t => t.stop());
+    micBtn.classList.remove('rec');
+    const type = rec.mimeType || 'audio/webm';
+    rec = null;
+    const blob = new Blob(chunks, { type });
+    if (blob.size < 2000) { setStatus(''); return; }
+    setStatus('Átírás…', 'active');
+    const fd = new FormData();
+    fd.append('file', blob, type.includes('mp4') ? 'q.m4a' : 'q.webm');
+    try {
+      const r = await fetch(PROXY + '/stt', { method: 'POST', body: fd });
+      if (r.status === 429) { setStatus('Sok kérés — várj egy percet', 'err'); return; }
+      const { text } = await r.json();
+      const clean = (text || '').replace(/\[[^\]]*\]/g, '').trim();
+      setStatus('');
+      if (clean) sendMessage(clean);
+      else setStatus('Nem hallottam — próbáld újra', 'err');
+    } catch { setStatus('Az átírás nem sikerült', 'err'); }
+  };
+  rec.start();
+  micBtn.classList.add('rec');
+  setStatus('Hallgatlak…', 'active');
+}
+function stopRec() { if (rec && rec.state === 'recording') rec.stop(); }
+micBtn.addEventListener('pointerdown', e => { e.preventDefault(); startRec(); });
+micBtn.addEventListener('pointerup', stopRec);
+micBtn.addEventListener('pointerleave', stopRec);
+micBtn.addEventListener('contextmenu', e => e.preventDefault());
+
+/* ---- nyitó üzenet ---- */
+const GREETING = 'Szia! A műhely Maintenance Copilotja vagyok — most épp egy MIKA-6E KON kazán gépkönyvével. Miben segítsek?\n' +
+  '<<OPTIONS>>\n[{"label":"Hibakódot látok a kijelzőn","emoji":"🔥"},{"label":"Karbantartást végeznék","emoji":"🛠️"},{"label":"Műszaki kérdésem van","emoji":"📖"}]\n<</OPTIONS>>';
+history.push({ role: 'assistant', content: GREETING });
+renderBot(addMsg('bot'), GREETING);
+document.getElementById('image-panel').classList.remove('open');
+</script>
+</body>
+</html>

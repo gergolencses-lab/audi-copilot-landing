@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-08-20T15:22:32.213Z",
+        "reason": "panel-img src-jet a showImage() JS tolti be futasidoben; a panel display:none amig nincs kep"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-08-20T15:22:32.242Z",
+        "reason": "Smoke Glass AR-HUD design-nyelv, Gergo a sessionben hagyta jova (fustüveg/ice-glow) — azonos ignore el a ar-vision templatekre is"
+      }
+    ]
+  }
+}
