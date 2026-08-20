@@ -12,8 +12,8 @@
   --ice:#9BE8FF;
   --red:#FF3355;
   --ok:#45E0A0;
-  --txt:rgba(255,255,255,.92);
-  --txt-dim:rgba(255,255,255,.6);
+  --txt:rgba(255,255,255,.94);
+  --txt-dim:rgba(255,255,255,.72);
   --glass:linear-gradient(165deg, rgba(18,23,30,.60), rgba(9,12,16,.44));
   --edge:rgba(255,255,255,.16);
   --edge-top:rgba(255,255,255,.30);
@@ -45,15 +45,16 @@ body{
 }
 .p-head{
   display:flex;align-items:center;gap:8px;padding:12px 16px 10px;
-  font-size:10.5px;letter-spacing:.3em;text-transform:uppercase;color:var(--ice);font-weight:500;
+  font-size:12px;letter-spacing:.26em;text-transform:uppercase;color:var(--ice);font-weight:500;
   border-bottom:1px solid rgba(255,255,255,.08);
 }
+button:focus-visible, input:focus-visible{outline:2px solid rgba(155,232,255,.8);outline-offset:2px}
 .p-head .dot{width:6px;height:6px;border-radius:50%;background:var(--ice);box-shadow:0 0 10px rgba(155,232,255,.8)}
 
 /* ---- chrome ---- */
 .chip{
   position:fixed;z-index:30;display:flex;align-items:center;gap:9px;
-  padding:9px 15px;font-size:11px;letter-spacing:.24em;text-transform:uppercase;
+  padding:9px 15px;font-size:12px;letter-spacing:.2em;text-transform:uppercase;
   color:var(--txt);border-radius:999px;
 }
 #brand{top:20px;left:22px}
@@ -76,10 +77,11 @@ body{
 }
 @keyframes sweep{from{top:2%}to{top:96%}}
 #idtag{
-  position:fixed;z-index:21;padding:10px 16px;font-size:12px;letter-spacing:.14em;
-  opacity:0;transform:translateY(10px);transition:opacity .5s var(--ease), transform .5s var(--ease);
+  position:fixed;z-index:21;padding:10px 16px;font-size:13px;letter-spacing:.12em;
+  opacity:0;transform:translateY(10px);transition:opacity 1s var(--ease), transform .5s var(--ease);
 }
 #idtag.on{opacity:1;transform:none}
+#idtag.fade{opacity:0;pointer-events:none}
 #idtag b{color:var(--ice);font-weight:600}
 
 /* ---- anchor ring + error tag ---- */
@@ -93,12 +95,12 @@ body{
 #errtag{
   position:fixed;z-index:19;padding:9px 14px;border-radius:12px;
   border:1px solid rgba(255,51,85,.5);
-  font-size:12px;letter-spacing:.1em;opacity:0;transform:translateY(8px);
+  font-size:13px;letter-spacing:.1em;opacity:0;transform:translateY(8px);
   transition:opacity .5s var(--ease), transform .5s var(--ease);pointer-events:none;
 }
 #errtag.on{opacity:1;transform:none}
 #errtag .e{color:var(--red);font-weight:600;letter-spacing:.2em}
-#errtag .d{color:var(--txt-dim);font-size:11px;margin-top:2px}
+#errtag .d{color:var(--txt-dim);font-size:12.5px;margin-top:2px}
 
 /* ---- left: steps / worksheet ---- */
 #steps{
@@ -107,9 +109,10 @@ body{
 }
 #steps.on{display:flex}
 #steps-list{padding:10px 16px 14px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(155,232,255,.25) transparent}
-.step{display:flex;gap:11px;padding:8px 0;font-size:13.5px;line-height:1.45;font-weight:300;color:var(--txt-dim);align-items:flex-start}
+.step{display:flex;gap:11px;padding:8px 0;font-size:14px;line-height:1.45;font-weight:400;color:var(--txt-dim);align-items:flex-start}
+.step.done span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .step .m{flex:none;width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(255,255,255,.3);margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:10px}
-.step.done{color:rgba(255,255,255,.42)}
+.step.done{color:rgba(255,255,255,.6)}
 .step.done .m{border-color:rgba(69,224,160,.7);color:var(--ok)}
 .step.done .m::before{content:'✓'}
 .step.act{color:var(--txt)}
@@ -117,13 +120,13 @@ body{
 .step.act .m::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--ice)}
 #worksheet{padding:12px 16px 16px;display:none}
 #worksheet.on{display:block}
-#worksheet li{list-style:none;font-size:13px;padding:4.5px 0;color:var(--txt-dim);display:flex;gap:9px;font-weight:300}
+#worksheet li{list-style:none;font-size:14px;padding:4.5px 0;color:var(--txt-dim);display:flex;gap:9px;font-weight:400}
 #worksheet li::before{content:'✓';color:var(--ok);font-weight:600}
 #worksheet .badge{
-  display:inline-block;margin-top:10px;font-size:10.5px;letter-spacing:.22em;color:var(--ok);
+  display:inline-block;margin-top:10px;font-size:12px;letter-spacing:.2em;color:var(--ok);
   border:1px solid rgba(69,224,160,.5);padding:4px 11px;border-radius:999px;
 }
-#worksheet .note{margin-top:9px;font-size:11.5px;color:var(--txt-dim);font-style:italic;line-height:1.5}
+#worksheet .note{margin-top:9px;font-size:12.5px;color:var(--txt-dim);font-style:italic;line-height:1.5}
 
 /* ---- right: diagram ---- */
 #diagram{
@@ -133,13 +136,15 @@ body{
 #diagram.on{display:flex}
 #diagram .imgwrap{padding:12px;flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
 #diagram img{width:100%;max-height:52vh;object-fit:contain;border-radius:10px;background:#fff;display:block}
-#diagram .cap{padding:0 16px 13px;font-size:12.5px;color:var(--txt-dim);line-height:1.5;font-weight:300}
+#diagram .cap{padding:0 16px 13px;font-size:13.5px;color:var(--txt-dim);line-height:1.5;font-weight:400}
+/* vonalas gépkönyv-ábrák invertálva: fehér vonal sötét alapon — additív kijelzőn nem reflektor */
+#diagram img.inv{filter:invert(.94) hue-rotate(180deg);background:rgba(9,12,16,.85)}
 #diagram .close, #diagram .zoombtn{
-  position:absolute;top:9px;z-index:2;border:1px solid rgba(255,255,255,.18);background:rgba(9,12,16,.6);
-  color:var(--txt);width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:14px;line-height:1;font-family:inherit;
+  position:absolute;top:8px;z-index:2;border:1px solid rgba(255,255,255,.22);background:rgba(9,12,16,.65);
+  color:var(--txt);width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:17px;line-height:1;font-family:inherit;
 }
-#diagram .close{right:10px}
-#diagram .zoombtn{right:42px;font-size:12px}
+#diagram .close{right:9px}
+#diagram .zoombtn{right:49px;font-size:14px}
 /* nagy nézet: majdnem teljes képernyő — a hangsáv és a felső státuszsor SOHA nincs takarva */
 #diagram.zoom{
   right:auto;left:50%;top:60px;bottom:124px;transform:translateX(-50%);
@@ -162,11 +167,10 @@ body{
 .opt-chip{
   border:1px solid rgba(155,232,255,.4);background:rgba(12,17,23,.55);color:var(--txt);
   backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  padding:10px 17px;border-radius:999px;font-size:13.5px;font-family:inherit;cursor:pointer;
+  padding:10px 17px;border-radius:999px;font-size:14.5px;font-family:inherit;cursor:pointer;
   transition:background .2s var(--ease), transform .2s var(--ease);
-  animation:chipin .4s var(--ease);
 }
-@keyframes chipin{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+body.kb-open #chips{bottom:188px}
 .opt-chip:hover{background:rgba(155,232,255,.16);transform:translateY(-1px)}
 .opt-chip .n{
   display:inline-flex;align-items:center;justify-content:center;
@@ -178,8 +182,8 @@ body{
 
 #voicebar{
   position:fixed;z-index:29;bottom:26px;left:50%;transform:translateX(-50%);
-  width:min(720px, 94vw);display:flex;align-items:center;gap:14px;padding:12px 16px;
-  border-radius:999px;
+  width:min(760px, 94vw);display:flex;align-items:center;gap:14px;padding:12px 18px;
+  border-radius:28px;
 }
 #mic{
   flex:none;width:56px;height:56px;border-radius:50%;border:1px solid rgba(155,232,255,.4);
@@ -192,17 +196,18 @@ body{
 #mic.rec svg{stroke:var(--red)}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,51,85,.35)}70%{box-shadow:0 0 0 15px rgba(255,51,85,0)}100%{box-shadow:0 0 0 0 rgba(255,51,85,0)}}
 #wave{flex:none;display:flex;align-items:center;gap:3px;height:26px}
-#wave span{width:3px;border-radius:2px;background:var(--ice);height:6px;opacity:.45;transition:opacity .3s}
+#wave span{width:3px;border-radius:2px;background:var(--ice);height:6px;opacity:.2;transition:opacity .3s}
 #wave.live span{opacity:1;animation:wv 1s ease-in-out infinite}
 #wave span:nth-child(1){animation-delay:0s}#wave span:nth-child(2){animation-delay:.15s}
 #wave span:nth-child(3){animation-delay:.3s}#wave span:nth-child(4){animation-delay:.45s}
 #wave span:nth-child(5){animation-delay:.6s}
 @keyframes wv{0%,100%{height:6px}50%{height:22px}}
 #vb-main{flex:1;min-width:0}
-#vb-state{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--ice);margin-bottom:3px;font-weight:500}
+#vb-state{font-size:12px;letter-spacing:.26em;text-transform:uppercase;color:var(--ice);margin-bottom:3px;font-weight:500}
+/* az életvonal nem vág le: a pill felfelé nő, a szöveg a legolvashatóbb elem */
 #vb-text{
-  font-size:14.5px;line-height:1.4;font-weight:300;color:var(--txt);
-  max-height:2.8em;overflow:hidden;
+  font-size:16px;line-height:1.45;font-weight:400;color:var(--txt);
+  max-height:26vh;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(155,232,255,.25) transparent;
 }
 #kb-btn{
   flex:none;border:none;background:none;cursor:pointer;padding:8px;color:rgba(255,255,255,.45);
@@ -238,7 +243,7 @@ body{
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9BE8FF" stroke-width="2"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="9" opacity=".4"/></svg>
   Maintenance Copilot
 </div>
-<div class="chip glass" id="machine"><b>MIKA-6E KON</b> · Gépház 03 · <span id="clock"></span></div>
+<div class="chip glass" id="machine"><b>MIKA-6E KON</b> · Gépház 03</div>
 
 <div id="scanbox"><div class="c c1"></div><div class="c c2"></div><div class="c c3"></div><div class="c c4"></div><div class="sweep"></div></div>
 <div class="glass" id="idtag"><b>MIKA-6E KON</b> · azonosítva · nyitott hibajegy: 1</div>
@@ -286,11 +291,6 @@ body{
 const PROXY = 'https://audi-copilot-proxy.gergo-lencses.workers.dev';
 const IMG_BASE = 'assets/gepkonyv/';
 
-/* ---- óra ---- */
-const clockEl = document.getElementById('clock');
-function tick(){ clockEl.textContent = new Date().toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'}); }
-tick(); setInterval(tick, 20000);
-
 /* ---- boiler-horgonyok: kép-koordináták → képernyő (cover + center/40% crop) ---- */
 const IMG_W = 1920, IMG_H = 1072;
 // a bg-demo.jpg-ben mért dobozok (px): kazán teste + az E70 kijelző sávja
@@ -331,7 +331,7 @@ function setState(s, live){
 }
 function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-const blockRe = /<<(OPTIONS|IMAGE|SUMMARY|UI)>>([\s\S]*?)<<\/\1>>/g;
+const blockRe = /<<(OPTIONS|IMAGE|SUMMARY|UI|STEP)>>([\s\S]*?)<<\/\1>>/g;
 function stripBlocks(s){
   s = s.replace(blockRe, ' ');
   const open = s.indexOf('<<');
@@ -378,9 +378,13 @@ const diagramEl = document.getElementById('diagram');
 let lastDiagram = null;
 function diagramOpen(){ return diagramEl.classList.contains('on'); }
 function diagramZoomed(){ return diagramEl.classList.contains('zoom'); }
+const PHOTO_IMGS = new Set(['01_termekfoto.png','11_kotodoba_foto.png','12_megfelelessegi_nyilatkozat.png']);
 function showDiagram(path, cap){
   lastDiagram = {path, cap};
-  document.getElementById('dg-img').src = IMG_BASE + path;
+  const img = document.getElementById('dg-img');
+  img.src = IMG_BASE + path;
+  // vonalas ábra → invertálva (fehér vonal sötét alapon); fotó marad eredetiben
+  img.classList.toggle('inv', !PHOTO_IMGS.has(path));
   document.getElementById('dg-cap').textContent = cap || '';
   diagramEl.classList.add('on');
   // új kép MINDIG normál méretben nyílik — nagy nézet csak kifejezett kérésre
@@ -460,7 +464,9 @@ function renderReply(full){
   chipsEl.innerHTML = '';
   lastOptions = [];
   let diagramShown = false;
+  let stepTitle = null;
   for (const part of parseSegments(full)) {
+    if (part.type === 'STEP') { stepTitle = part.content.trim().slice(0, 48); continue; }
     if (part.type === 'OPTIONS') {
       try {
         JSON.parse(part.content).slice(0,6).forEach((o, i) => {
@@ -490,13 +496,16 @@ function renderReply(full){
       try { applyUi(JSON.parse(part.content).action); } catch {}
     }
   }
+  // a bal panel lépés-gerinc: CSAK a rövid STEP-cím kerül be, a próza a hangé
   const prose = stripBlocks(full);
-  if (prose) { vbText.textContent = prose; addStep(prose); }
+  if (prose) vbText.textContent = prose;
+  if (stepTitle) addStep(stepTitle);
   maybeShowError(prose);
 }
 
-/* kimondott/beírt sorszám → opció (pl. „kettő" → a 2. chip szövege) */
-const NUM_WORDS = {'egy':1,'kettő':2,'ketto':2,'kettőt':2,'három':3,'harom':3,'hármat':3,'négy':4,'negy':4,'négyet':4,'öt':5,'ot':5,'ötöt':5,'hat':6,'hatot':6};
+/* kimondott/beírt sorszám → opció (pl. „kettő" vagy „a négyes" → a chip szövege) */
+const NUM_WORDS = {'egy':1,'kettő':2,'ketto':2,'kettőt':2,'három':3,'harom':3,'hármat':3,'négy':4,'negy':4,'négyet':4,'öt':5,'ot':5,'ötöt':5,'hat':6,'hatot':6,
+  'egyes':1,'egyest':1,'kettes':2,'kettest':2,'hármas':3,'harmas':3,'hármast':3,'négyes':4,'negyes':4,'négyest':4,'ötös':5,'otos':5,'ötöst':5,'hatos':6,'hatost':6};
 function resolveNumber(text){
   const t = text.toLowerCase().replace(/[.,!?]/g,'').trim();
   let n = null;
@@ -759,14 +768,19 @@ function needTap(retryFn){
 /* ---- billentyűzet-fallback ---- */
 const kbRow = document.getElementById('kb-row');
 const kbInput = document.getElementById('kb-input');
-document.getElementById('kb-btn').onclick = () => { kbRow.classList.toggle('on'); if (kbRow.classList.contains('on')) kbInput.focus(); };
+document.getElementById('kb-btn').onclick = () => {
+  kbRow.classList.toggle('on');
+  document.body.classList.toggle('kb-open', kbRow.classList.contains('on'));
+  if (kbRow.classList.contains('on')) kbInput.focus();
+};
 function kbSend(){ const t = kbInput.value; kbInput.value=''; send(t); }
 document.getElementById('kb-send').onclick = kbSend;
 kbInput.addEventListener('keydown', e => { if (e.key === 'Enter') kbSend(); });
 
-/* ---- nyitány: mikrofon azonnal nyílik, szken fut, és a Copilot szólal meg elsőként ---- */
-const GREETING = 'Felismertem a gépet: MIKA-6E KON kondenzációs kazán — és látom, van egy nyitott hibajegye. Miben segítsek?\n' +
-  '<<OPTIONS>>\n[{"label":"Hibakódot látok a kijelzőn"},{"label":"Karbantartást végeznék"},{"label":"Műszaki kérdésem van"}]\n<</OPTIONS>>';
+/* ---- nyitány: mikrofon azonnal nyílik, szken fut, és a Copilot a JEGGYEL nyit ---- */
+const GREETING = '<<STEP>>\nGép azonosítva\n<</STEP>>\n' +
+  'Felismertem a gépet: MIKA-6E KON. A nyitott hibajegye: Error hetven — a kondenzációs tartály tele. Ezen dolgozunk?\n' +
+  '<<OPTIONS>>\n[{"label":"Igen, kezdjük a javítást"},{"label":"Más gondom van"},{"label":"Műszaki kérdésem van"}]\n<</OPTIONS>>';
 function greet(){
   history.push({role:'assistant', content:GREETING});
   renderReply(GREETING);
@@ -786,6 +800,8 @@ Promise.all([micBoot, new Promise(r => setTimeout(r, 1900))]).then(([micOk]) => 
     needTap(() => enableListening().catch(() => setState('Nincs mikrofon-engedély', false)));
   }
   greet();
+  // az azonosító-tag megtette a dolgát — 6 mp után elköszön, a gép-chip marad
+  setTimeout(() => document.getElementById('idtag').classList.add('fade'), 6000);
 });
 </script>
 </body>

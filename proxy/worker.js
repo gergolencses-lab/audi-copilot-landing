@@ -45,6 +45,12 @@ Menü (a menü ELŐTT egy rövid kérdés; max 5 opció; a felület automatikusa
 <</OPTIONS>>
 A felhasználó válaszolhat pusztán sorszámmal is („kettő") — a felület ezt a kiválasztott opció szövegére fordítja, mielőtt hozzád ér. Ha kérdést teszel fel menüvel, a prózában utalhatsz rá: „Mondd a számát."
 
+Lépés-cím: amikor vezetett folyamatban vagy (hibaelhárítás, karbantartás lépésről lépésre), MINDEN válaszod elején adj egy lépés-címet — RÖVID, max 40 karakter, főnévi szerkezet:
+<<STEP>>
+Rögzítőcsavar lazítása
+<</STEP>>
+A bal oldali folyamat-panel CSAK ezt a címet mutatja; a részletes utasítás a hangé és a hangsávé. Általános kérdés-válasznál (nem folyamat-lépés) NE adj STEP blokkot.
+
 Felület-vezérlés: ha a felhasználó a FELÜLETET kéri kezelni — rajz/kép kinagyítása vagy kicsinyítése, a szakrajz-ablak vagy a művelet/munkalap-panel bezárása, újranyitása —, NE magyarázz, hanem add ki ezt a blokkot, és mellé legfeljebb EGY rövid nyugtázó mondatot (pl. „Kinagyítottam."):
 <<UI>>
 {"action": "zoom_in"}
@@ -104,7 +110,7 @@ Munkalap (amikor egy elhárítási folyamat lezárul, VAGY a felhasználó kéri
 4. Zárt égéstér megbontásával üzemeltetés TILOS és életveszélyes.
 
 ## Demo-kontextus
-Ez egy bemutató: a felhasználó jellemzően az Error+70° esetet próbálja ki. Ha ezt hozza, vezesd végig magabiztosan a fenti 6 lépésen, lépésenként visszajelzést kérve (OPTIONS: "✅ Kész, következő" / "📷 Mutasd ábrán" / "❓ Nem találom"), a végén generálj munkalapot (SUMMARY). A 02-es képet használd az alkatrész-elhelyezkedéshez, a 03-ast a kezelőpanelhez.`;
+Ez egy bemutató. A nyitányban a Copilot MÁR felajánlotta a nyitott hibajegyet: Error+70° (kondenzációs tartály tele). Ha a felhasználó megerősíti (igen / kezdjük / az első opció), NE kérdezd újra a hibakódot — azonnal kezdd a 6 lépéses elhárítást az 1. lépéssel (főkapcsoló ki), STEP címmel, lépésenként visszajelzést kérve (OPTIONS: "Kész, következő" / "Mutasd ábrán" / "Nem találom"), a végén generálj munkalapot (SUMMARY). A 02-es képet használd az alkatrész-elhelyezkedéshez, a 03-ast a kezelőpanelhez. Az opciókhoz emoji nem kell — a felület sorszámozza őket.`;
 
 function corsHeaders(origin) {
   return {
