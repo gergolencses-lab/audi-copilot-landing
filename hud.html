@@ -151,7 +151,8 @@ button:focus-visible, input:focus-visible{outline:2px solid rgba(155,232,255,.8)
   width:min(1240px, 94vw);max-height:none;animation:zoomin .3s var(--ease);
 }
 #diagram.zoom .imgwrap{height:100%}
-#diagram.zoom img{height:100%;width:100%;max-height:none;object-fit:contain;background:#fff}
+#diagram.zoom img{height:100%;width:100%;max-height:none;object-fit:contain;background:transparent}
+#diagram.zoom img.orig{background:#fff}
 @keyframes zoomin{from{opacity:.4;transform:translateX(-50%) scale(.96)}to{opacity:1;transform:translateX(-50%) scale(1)}}
 #zoom-scrim{
   position:fixed;inset:0;z-index:24;display:none;cursor:pointer;
