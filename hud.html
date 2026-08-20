@@ -252,7 +252,7 @@ body{
 </div>
 
 <div class="glass" id="voicebar">
-  <button id="mic" aria-label="Nyomd és tartsd a beszédhez">
+  <button id="mic" aria-label="Mikrofon némítása / visszakapcsolása">
     <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
   </button>
   <div id="wave"><span></span><span></span><span></span><span></span><span></span></div>
@@ -445,7 +445,11 @@ async function speak(full){
     player.src = URL.createObjectURL(blob);
     setState('Beszél', true);
     player.onended = idle;
-    await player.play().catch(idle);
+    await player.play().catch(() => {
+      // autoplay-blokk: egyetlen koppintás után szól, és onnantól minden magától megy
+      idle();
+      needTap(() => { setState('Beszél', true); player.play().catch(idle); });
+    });
   } catch { idle(); }
 }
 
@@ -587,11 +591,10 @@ function vadTickFn(){
   }
 }
 async function enableListening(){
-  try {
-    recStream = await navigator.mediaDevices.getUserMedia({
-      audio: {echoCancellation:true, noiseSuppression:true, autoGainControl:true}
-    });
-  } catch { setState('Nincs mikrofon-engedély', false); return; }
+  if (listening) return;
+  recStream = await navigator.mediaDevices.getUserMedia({
+    audio: {echoCancellation:true, noiseSuppression:true, autoGainControl:true}
+  });
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   const src = audioCtx.createMediaStreamSource(recStream);
   analyser = audioCtx.createAnalyser();
@@ -603,7 +606,6 @@ async function enableListening(){
   startRecorder();
   vadTimer = setInterval(vadTickFn, TICK);
   setState('Figyelek', false);
-  vbText.textContent = 'A mikrofon nyitva — csak beszélj. Ha közbeszólsz, elhallgatok.';
 }
 function disableListening(){
   listening = false;
@@ -614,10 +616,27 @@ function disableListening(){
   if (audioCtx) { audioCtx.close(); audioCtx = null; }
   mic.classList.remove('on','rec');
   speechActive = false; speechMs = 0;
-  setState('Copilot', false);
-  vbText.textContent = 'Hangvezérlés kikapcsolva — a mikrofonnal kapcsolod vissza.';
+  setState('Némítva', false);
 }
-mic.addEventListener('click', () => { listening ? disableListening() : enableListening(); });
+/* a mikrofon-ikon csak némítás-jelző — alapból minden magától megy */
+mic.addEventListener('click', () => {
+  if (listening) disableListening();
+  else enableListening().catch(() => setState('Nincs mikrofon-engedély', false));
+});
+
+/* egy-koppintásos mentőöv, ha a böngésző mégis blokkolná az autoplayt/mikrofont —
+   minden várakozó indítást ugyanaz az egy koppintás old fel */
+const tapQueue = [];
+function needTap(retryFn){
+  tapQueue.push(retryFn);
+  if (document.getElementById('tap-overlay')) return;
+  const o = document.createElement('div');
+  o.id = 'tap-overlay';
+  o.style.cssText = 'position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(5,7,10,.35);backdrop-filter:blur(3px);cursor:pointer';
+  o.innerHTML = '<div class="glass" style="padding:16px 28px;font-size:15px;letter-spacing:.06em">Koppints egyet — és indul</div>';
+  o.onclick = () => { o.remove(); tapQueue.splice(0).forEach(fn => fn()); };
+  document.body.appendChild(o);
+}
 
 /* ---- billentyűzet-fallback ---- */
 const kbRow = document.getElementById('kb-row');
@@ -627,9 +646,14 @@ function kbSend(){ const t = kbInput.value; kbInput.value=''; send(t); }
 document.getElementById('kb-send').onclick = kbSend;
 kbInput.addEventListener('keydown', e => { if (e.key === 'Enter') kbSend(); });
 
-/* ---- nyitány: szken → azonosítás → köszönés ---- */
+/* ---- nyitány: mikrofon azonnal nyílik, szken fut, és a Copilot szólal meg elsőként ---- */
 const GREETING = 'Felismertem a gépet: MIKA-6E KON kondenzációs kazán — és látom, van egy nyitott hibajegye. Miben segítsek?\n' +
-  '<<OPTIONS>>\n[{"label":"Hibakódot látok a kijelzőn","emoji":"🔥"},{"label":"Karbantartást végeznék","emoji":"🛠️"},{"label":"Műszaki kérdésem van","emoji":"📖"}]\n<</OPTIONS>>';
+  '<<OPTIONS>>\n[{"label":"Hibakódot látok a kijelzőn"},{"label":"Karbantartást végeznék"},{"label":"Műszaki kérdésem van"}]\n<</OPTIONS>>';
+function greet(){
+  history.push({role:'assistant', content:GREETING});
+  renderReply(GREETING);
+  speak(GREETING);
+}
 setState('Szkennelés', true);
 vbText.textContent = 'Gép azonosítása…';
 document.getElementById('scanbox').classList.add('on');
@@ -637,13 +661,14 @@ setTimeout(() => {
   document.getElementById('scanbox').classList.remove('on');
   document.getElementById('idtag').classList.add('on');
 }, 1500);
-setTimeout(() => {
-  history.push({role:'assistant', content:GREETING});
-  renderReply(GREETING);
-  // a nyitó üzenetet nem olvassuk fel automatikusan — böngésző-autoplay tiltás miatt;
-  // a mikrofon-bekapcsolás az első gesztus, onnantól minden válasz hangzik is
-  if (!listening) setState('Hang: kattints a mikrofonra', false);
-}, 1900);
+const micBoot = enableListening().then(() => true).catch(() => false);
+Promise.all([micBoot, new Promise(r => setTimeout(r, 1900))]).then(([micOk]) => {
+  if (!micOk) {
+    setState('Mikrofon: koppints az engedélyhez', false);
+    needTap(() => enableListening().catch(() => setState('Nincs mikrofon-engedély', false)));
+  }
+  greet();
+});
 </script>
 </body>
 </html>
