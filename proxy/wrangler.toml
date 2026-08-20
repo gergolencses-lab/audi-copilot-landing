@@ -14,4 +14,4 @@ MODEL = "claude-sonnet-5"
 name = "RL"
 type = "ratelimit"
 namespace_id = "2101"
-simple = { limit = 20, period = 60 }
+simple = { limit = 40, period = 60 }   # hangos kör = stt + chat + 2× tts

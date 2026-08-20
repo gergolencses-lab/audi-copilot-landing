@@ -429,36 +429,54 @@ function resolveNumber(text){
   return text;
 }
 
-/* ---- TTS ---- */
+/* ---- TTS: mondat-pipeline — az első kész mondat azonnal megszólal,
+        a többi darab sorban követi, generálás közben ---- */
 function idle(){ setState(listening ? 'Figyelek' : 'Copilot', false); }
-async function speak(full){
-  let t = stripBlocks(full);
-  if (!t) { idle(); return; }
-  if (t.length > 580) t = t.slice(0, 580);
-  try {
-    const r = await fetch(PROXY + '/tts', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({text: t}),
-    });
-    if (!r.ok) { idle(); return; }
-    const blob = await r.blob();
-    player.src = URL.createObjectURL(blob);
-    setState('Beszél', true);
-    player.onended = idle;
-    await player.play().catch(() => {
-      // autoplay-blokk: egyetlen koppintás után szól, és onnantól minden magától megy
-      idle();
-      needTap(() => { setState('Beszél', true); player.play().catch(idle); });
-    });
-  } catch { idle(); }
+let speechQueue = [], speechRunning = false, speechGen = 0;
+function stopSpeech(){
+  speechGen++;
+  speechQueue = [];
+  player.pause();
 }
+function enqueueSpeech(text){
+  text = (text || '').trim();
+  if (!text) return;
+  const gen = speechGen;
+  const p = fetch(PROXY + '/tts', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({text: text.slice(0, 580)}),
+  }).then(r => r.ok ? r.blob() : null)
+    .then(b => b ? URL.createObjectURL(b) : null)
+    .catch(() => null);
+  speechQueue.push({gen, p});
+  runSpeech();
+}
+async function runSpeech(){
+  if (speechRunning) return;
+  speechRunning = true;
+  while (speechQueue.length){
+    const item = speechQueue.shift();
+    if (item.gen !== speechGen) continue;
+    const url = await item.p;
+    if (!url || item.gen !== speechGen) continue;
+    player.src = url;
+    setState('Beszél', true);
+    const done = new Promise(res => { player.onended = res; player.onpause = res; });
+    try { await player.play(); }
+    catch { needTap(() => { setState('Beszél', true); player.play().catch(()=>{}); }); }
+    await done;
+  }
+  speechRunning = false;
+  idle();
+}
+function speakAll(full){ enqueueSpeech(stripBlocks(full)); }
 
 /* ---- chat ---- */
 async function send(text){
   if (busy || !text.trim()) return;
   text = resolveNumber(text);
   busy = true;
-  player.pause();
+  stopSpeech();
   chipsEl.innerHTML = '';
   maybeShowError(text);
   history.push({role:'user', content:text});
@@ -466,6 +484,7 @@ async function send(text){
   vbText.textContent = '…';
 
   let full = '';
+  let firstChunk = '';   // az első kimondott mondat — streamelés közben már szól
   try {
     const r = await fetch(PROXY + '/chat', {
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -488,6 +507,10 @@ async function send(text){
           full += ev.delta.text;
           const live = stripBlocks(full);
           if (live) vbText.textContent = live;
+          if (!firstChunk && live.length >= 25) {
+            const m = live.match(/^[\s\S]{15,}?[.!?…](["»)])?(?=\s)/);
+            if (m) { firstChunk = m[0]; enqueueSpeech(firstChunk); }
+          }
         } else if (ev.type === 'error') {
           throw new Error((ev.error && ev.error.type) || 'stream');
         }
@@ -495,7 +518,13 @@ async function send(text){
     }
     history.push({role:'assistant', content:full});
     renderReply(full);
-    speak(full);
+    const prose = stripBlocks(full);
+    if (!firstChunk) speakAll(full);
+    else {
+      const idx = prose.indexOf(firstChunk);
+      const rest = idx >= 0 ? prose.slice(idx + firstChunk.length).trim() : '';
+      if (rest) enqueueSpeech(rest);
+    }
   } catch (e) {
     history.pop();
     setState('Hiba', false);
@@ -561,7 +590,7 @@ function vadRms(){
 function vadTickFn(){
   if (!listening || !rec) return;
   const rms = vadRms();
-  const ttsPlaying = player && !player.paused && !player.ended;
+  const ttsPlaying = speechRunning || (player && !player.paused && !player.ended);
   const thr = Math.max(noiseFloor*3, 0.012) * (ttsPlaying ? 1.8 : 1);
   const startNeed = ttsPlaying ? 450 : 200;
   const speaking = rms > thr;
@@ -571,7 +600,7 @@ function vadTickFn(){
       speechMs += TICK;
       if (speechMs >= startNeed) {
         speechActive = true; silenceMs = 0;
-        if (ttsPlaying) player.pause();                          // barge-in: a bot elhallgat
+        if (ttsPlaying) stopSpeech();                            // barge-in: a teljes sor elhallgat
         mic.classList.add('rec');
         setState('Hallgatlak', true);
       }
@@ -652,7 +681,7 @@ const GREETING = 'Felismertem a gépet: MIKA-6E KON kondenzációs kazán — é
 function greet(){
   history.push({role:'assistant', content:GREETING});
   renderReply(GREETING);
-  speak(GREETING);
+  speakAll(GREETING);
 }
 setState('Szkennelés', true);
 vbText.textContent = 'Gép azonosítása…';
