@@ -1,0 +1,17 @@
+name = "audi-copilot-proxy"
+main = "worker.js"
+compatibility_date = "2026-08-01"
+
+# Secrets (do NOT put here) — set once with:
+#   cd proxy && npx wrangler secret put ANTHROPIC_API_KEY
+#   printf '%s' "$ELEVENLABS_API_KEY" | npx wrangler secret put ELEVENLABS_API_KEY
+
+[vars]
+VOICE_ID = "onwK4e9ZLuTAKqWW03F9"   # placeholder (premade Daniel) — G1 után csere a Magyar Férfi PVC id-re
+MODEL = "claude-sonnet-5"
+
+[[unsafe.bindings]]
+name = "RL"
+type = "ratelimit"
+namespace_id = "2101"
+simple = { limit = 20, period = 60 }
