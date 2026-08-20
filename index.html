@@ -145,11 +145,20 @@ footer{padding:70px 24px 46px;text-align:center;border-top:1px solid rgba(255,25
 footer .rings{opacity:.5;margin-bottom:18px}
 footer p{font-size:13px;color:var(--txt-dim);letter-spacing:.08em;font-weight:300}
 footer .zel{margin-top:16px}
-footer .zel img{height:32px;width:auto;opacity:.75;transition:opacity .25s var(--ease)}
+footer .zel img{height:38px;width:auto;opacity:.75;transition:opacity .25s var(--ease)}
 footer .zel a:hover img{opacity:1}
+
+/* lebegő ZEL szimbólum — bal felső sarok */
+#zel-float{position:fixed;top:22px;left:26px;z-index:60;opacity:.65;transition:opacity .25s var(--ease)}
+#zel-float:hover{opacity:1}
+#zel-float img{height:34px;width:auto;display:block}
 </style>
 </head>
 <body>
+
+<a id="zel-float" href="https://zel-group.com" target="_blank" rel="noopener" aria-label="ZEL Group">
+  <img src="assets/zel-symbol-white.svg" alt="ZEL Group">
+</a>
 
 <!-- ═══════════ ACT 1 · HERO ═══════════ -->
 <div id="hero">
@@ -242,7 +251,7 @@ footer .zel a:hover img{opacity:1}
     </svg>
   </div>
   <p>AUDI Maintenance Copilot — demo</p>
-  <div class="zel"><a href="https://zel-group.com" target="_blank" rel="noopener"><img src="assets/zel-logo-white.svg" alt="ZEL Group — Zero Emission Leadership"></a></div>
+  <div class="zel"><a href="https://zel-group.com" target="_blank" rel="noopener"><img src="assets/zel-symbol-white.svg" alt="ZEL Group"></a></div>
 </footer>
 
 <script>
