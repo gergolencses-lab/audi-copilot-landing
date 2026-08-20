@@ -172,6 +172,7 @@ body{
   transition:background .2s;touch-action:none;-webkit-user-select:none;user-select:none;
 }
 #mic svg{width:23px;height:23px;stroke:var(--ice);fill:none;stroke-width:1.8;stroke-linecap:round}
+#mic.on{border-color:rgba(155,232,255,.8);background:rgba(155,232,255,.18);box-shadow:0 0 0 3px rgba(155,232,255,.12)}
 #mic.rec{background:rgba(255,51,85,.18);border-color:rgba(255,51,85,.6);animation:pulse 1.4s infinite}
 #mic.rec svg{stroke:var(--red)}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,51,85,.35)}70%{box-shadow:0 0 0 15px rgba(255,51,85,0)}100%{box-shadow:0 0 0 0 rgba(255,51,85,0)}}
@@ -429,22 +430,23 @@ function resolveNumber(text){
 }
 
 /* ---- TTS ---- */
+function idle(){ setState(listening ? 'Figyelek' : 'Copilot', false); }
 async function speak(full){
   let t = stripBlocks(full);
-  if (!t) { setState('Copilot', false); return; }
+  if (!t) { idle(); return; }
   if (t.length > 580) t = t.slice(0, 580);
   try {
     const r = await fetch(PROXY + '/tts', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({text: t}),
     });
-    if (!r.ok) { setState('Copilot', false); return; }
+    if (!r.ok) { idle(); return; }
     const blob = await r.blob();
     player.src = URL.createObjectURL(blob);
     setState('Beszél', true);
-    player.onended = () => setState('Copilot', false);
-    await player.play().catch(()=>setState('Copilot', false));
-  } catch { setState('Copilot', false); }
+    player.onended = idle;
+    await player.play().catch(idle);
+  } catch { idle(); }
 }
 
 /* ---- chat ---- */
@@ -500,8 +502,17 @@ async function send(text){
   busy = false;
 }
 
-/* ---- push-to-talk ---- */
-let rec = null, chunks = [], recStream = null;
+/* ---- kéz nélküli hangvezérlés: folyamatos hallgatás + turn-detektálás + barge-in ----
+   A mikrofon egyszer kapcsol be (kattintás = böngésző-gesztus az engedélyhez), utána
+   végig nyitva marad. Egy energia-alapú VAD figyeli a beszédet: beszéd-kezdetkor a bot
+   elhallgat (barge-in), ~0,85 mp csend = a mondandó vége → a felvétel a Scribe-ba megy.
+   Az echoCancellation kiszűri a bot saját hangját; TTS közben magasabb a küszöb. */
+let listening = false;
+let audioCtx = null, analyser = null, vadBuf = null, vadTimer = null;
+let rec = null, chunks = [], recStream = null, recStartedAt = 0, dropRec = false;
+let speechActive = false, speechMs = 0, silenceMs = 0, noiseFloor = 0.006;
+const TICK = 50, SILENCE_END_MS = 850, MAX_TURN_MS = 30000, IDLE_ROTATE_MS = 15000;
+
 function recMime(){
   if (window.MediaRecorder) {
     if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) return 'audio/webm;codecs=opus';
@@ -509,44 +520,104 @@ function recMime(){
   }
   return '';
 }
-async function startRec(){
-  if (busy || rec) return;
-  player.pause(); setState('Copilot', false);
-  try { recStream = await navigator.mediaDevices.getUserMedia({audio:true}); }
-  catch { setState('Nincs mikrofon-engedély', false); return; }
-  chunks = [];
+function startRecorder(){
+  if (!recStream) return;
+  chunks = []; dropRec = false; recStartedAt = performance.now();
   const mime = recMime();
   rec = new MediaRecorder(recStream, mime ? {mimeType:mime} : undefined);
   rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
-  rec.onstop = async () => {
-    recStream.getTracks().forEach(t=>t.stop());
-    mic.classList.remove('rec');
-    const type = rec.mimeType || 'audio/webm';
-    rec = null;
-    const blob = new Blob(chunks, {type});
-    if (blob.size < 2000) { setState('Copilot', false); return; }
-    setState('Átírás', true);
-    const fd = new FormData();
-    fd.append('file', blob, type.includes('mp4') ? 'q.m4a' : 'q.webm');
-    try {
-      const r = await fetch(PROXY + '/stt', {method:'POST', body:fd});
-      if (r.status === 429) { setState('Sok kérés — várj egy percet', false); return; }
-      const {text} = await r.json();
-      const clean = (text||'').replace(/\[[^\]]*\]/g,'').trim();
-      if (clean) send(clean);
-      else setState('Nem hallottam — próbáld újra', false);
-    } catch { setState('Az átírás nem sikerült', false); }
-  };
+  rec.onstop = onRecStop;
   rec.start();
-  mic.classList.add('rec');
-  setState('Hallgatlak', true);
-  vbText.textContent = 'Tartsd nyomva, amíg beszélsz…';
 }
-function stopRec(){ if (rec && rec.state === 'recording') rec.stop(); }
-mic.addEventListener('pointerdown', e => { e.preventDefault(); startRec(); });
-mic.addEventListener('pointerup', stopRec);
-mic.addEventListener('pointerleave', stopRec);
-mic.addEventListener('contextmenu', e => e.preventDefault());
+async function onRecStop(){
+  const type = (rec && rec.mimeType) || 'audio/webm';
+  rec = null;
+  const blob = new Blob(chunks, {type});
+  const wasDrop = dropRec;
+  if (listening) startRecorder();          // a fül azonnal újra nyitva
+  if (wasDrop || blob.size < 2000) return;
+  setState('Átírás', true);
+  const fd = new FormData();
+  fd.append('file', blob, type.includes('mp4') ? 'q.m4a' : 'q.webm');
+  try {
+    const r = await fetch(PROXY + '/stt', {method:'POST', body:fd});
+    if (r.status === 429) { setState('Sok kérés — várj egy percet', false); return; }
+    const {text} = await r.json();
+    const clean = (text||'').replace(/\[[^\]]*\]/g,'').trim();
+    if (clean && !busy) send(clean);
+    else setState('Figyelek', false);
+  } catch { setState('Az átírás nem sikerült', false); }
+}
+function vadRms(){
+  analyser.getFloatTimeDomainData(vadBuf);
+  let s = 0;
+  for (let i = 0; i < vadBuf.length; i++) s += vadBuf[i]*vadBuf[i];
+  return Math.sqrt(s / vadBuf.length);
+}
+function vadTickFn(){
+  if (!listening || !rec) return;
+  const rms = vadRms();
+  const ttsPlaying = player && !player.paused && !player.ended;
+  const thr = Math.max(noiseFloor*3, 0.012) * (ttsPlaying ? 1.8 : 1);
+  const startNeed = ttsPlaying ? 450 : 200;
+  const speaking = rms > thr;
+  if (!speechActive) {
+    if (!speaking) noiseFloor = noiseFloor*0.985 + rms*0.015;   // zajpadló csak csendben tanul
+    if (speaking) {
+      speechMs += TICK;
+      if (speechMs >= startNeed) {
+        speechActive = true; silenceMs = 0;
+        if (ttsPlaying) player.pause();                          // barge-in: a bot elhallgat
+        mic.classList.add('rec');
+        setState('Hallgatlak', true);
+      }
+    } else {
+      speechMs = 0;
+      // hosszú csendnél eldobjuk és újraindítjuk a felvevőt, hogy a blob kicsi maradjon
+      if (performance.now() - recStartedAt > IDLE_ROTATE_MS) { dropRec = true; rec.stop(); }
+    }
+  } else {
+    silenceMs = speaking ? 0 : silenceMs + TICK;
+    const turnMs = performance.now() - recStartedAt;
+    if (silenceMs >= SILENCE_END_MS || turnMs > MAX_TURN_MS) {
+      speechActive = false; speechMs = 0;
+      mic.classList.remove('rec');
+      rec.stop();                                                // turn vége → STT
+    }
+  }
+}
+async function enableListening(){
+  try {
+    recStream = await navigator.mediaDevices.getUserMedia({
+      audio: {echoCancellation:true, noiseSuppression:true, autoGainControl:true}
+    });
+  } catch { setState('Nincs mikrofon-engedély', false); return; }
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const src = audioCtx.createMediaStreamSource(recStream);
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 1024;
+  vadBuf = new Float32Array(analyser.fftSize);
+  src.connect(analyser);
+  listening = true;
+  mic.classList.add('on');
+  startRecorder();
+  vadTimer = setInterval(vadTickFn, TICK);
+  setState('Figyelek', false);
+  vbText.textContent = 'A mikrofon nyitva — csak beszélj. Ha közbeszólsz, elhallgatok.';
+}
+function disableListening(){
+  listening = false;
+  clearInterval(vadTimer);
+  if (rec && rec.state === 'recording') { dropRec = true; rec.stop(); }
+  if (recStream) recStream.getTracks().forEach(t=>t.stop());
+  recStream = null;
+  if (audioCtx) { audioCtx.close(); audioCtx = null; }
+  mic.classList.remove('on','rec');
+  speechActive = false; speechMs = 0;
+  setState('Copilot', false);
+  vbText.textContent = 'Hangvezérlés kikapcsolva — a mikrofonnal kapcsolod vissza.';
+}
+mic.addEventListener('click', () => { listening ? disableListening() : enableListening(); });
 
 /* ---- billentyűzet-fallback ---- */
 const kbRow = document.getElementById('kb-row');
@@ -569,9 +640,9 @@ setTimeout(() => {
 setTimeout(() => {
   history.push({role:'assistant', content:GREETING});
   renderReply(GREETING);
-  setState('Copilot', false);
-  // a nyitó üzenetet nem olvassuk fel automatikusan — böngésző-autoplay tiltás miatt
-  // az első felhasználói interakció után már minden válasz hangzik is
+  // a nyitó üzenetet nem olvassuk fel automatikusan — böngésző-autoplay tiltás miatt;
+  // a mikrofon-bekapcsolás az első gesztus, onnantól minden válasz hangzik is
+  if (!listening) setState('Hang: kattints a mikrofonra', false);
 }, 1900);
 </script>
 </body>
