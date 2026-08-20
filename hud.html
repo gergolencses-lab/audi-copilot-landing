@@ -91,6 +91,7 @@ button:focus-visible, input:focus-visible{outline:2px solid rgba(155,232,255,.8)
   opacity:0;transition:opacity .6s var(--ease);pointer-events:none;
 }
 #ring.on{opacity:1;animation:ringpulse 2.4s var(--ease) infinite}
+#ring.ok{border-color:var(--ok);box-shadow:0 0 18px rgba(69,224,160,.45), inset 0 0 18px rgba(69,224,160,.2);animation:none}
 @keyframes ringpulse{0%,100%{box-shadow:0 0 18px rgba(255,51,85,.45), inset 0 0 18px rgba(255,51,85,.2)}50%{box-shadow:0 0 30px rgba(255,51,85,.7), inset 0 0 24px rgba(255,51,85,.3)}}
 #errtag{
   position:fixed;z-index:19;padding:9px 14px;border-radius:12px;
@@ -135,10 +136,8 @@ button:focus-visible, input:focus-visible{outline:2px solid rgba(155,232,255,.8)
 }
 #diagram.on{display:flex}
 #diagram .imgwrap{padding:12px;flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
-#diagram img{width:100%;max-height:52vh;object-fit:contain;border-radius:10px;background:#fff;display:block}
+#diagram img{width:100%;max-height:52vh;object-fit:contain;border-radius:10px;background:#fff;display:block;filter:brightness(.84) contrast(1.05)}
 #diagram .cap{padding:0 16px 13px;font-size:13.5px;color:var(--txt-dim);line-height:1.5;font-weight:400}
-/* vonalas gépkönyv-ábrák invertálva: fehér vonal sötét alapon — additív kijelzőn nem reflektor */
-#diagram img.inv{filter:invert(.94) hue-rotate(180deg);background:rgba(9,12,16,.85)}
 #diagram .close, #diagram .zoombtn{
   position:absolute;top:8px;z-index:2;border:1px solid rgba(255,255,255,.22);background:rgba(9,12,16,.65);
   color:var(--txt);width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:17px;line-height:1;font-family:inherit;
@@ -378,13 +377,9 @@ const diagramEl = document.getElementById('diagram');
 let lastDiagram = null;
 function diagramOpen(){ return diagramEl.classList.contains('on'); }
 function diagramZoomed(){ return diagramEl.classList.contains('zoom'); }
-const PHOTO_IMGS = new Set(['01_termekfoto.png','11_kotodoba_foto.png','12_megfelelessegi_nyilatkozat.png']);
 function showDiagram(path, cap){
   lastDiagram = {path, cap};
-  const img = document.getElementById('dg-img');
-  img.src = IMG_BASE + path;
-  // vonalas ábra → invertálva (fehér vonal sötét alapon); fotó marad eredetiben
-  img.classList.toggle('inv', !PHOTO_IMGS.has(path));
+  document.getElementById('dg-img').src = IMG_BASE + path;
   document.getElementById('dg-cap').textContent = cap || '';
   diagramEl.classList.add('on');
   // új kép MINDIG normál méretben nyílik — nagy nézet csak kifejezett kérésre
@@ -449,12 +444,26 @@ function uiCommand(raw){
 
 /* ---- error-horgony (csak ha tényleg az E70-nél járunk, nem felsorolásban) ---- */
 let errShown = false;
+/* a horgony pillanat-jelzés, nem tapéta: azonosításkor 8 mp-re villan fel, aztán eltűnik */
+function hideAnchor(){
+  document.getElementById('ring').classList.remove('on', 'ok');
+  document.getElementById('errtag').classList.remove('on');
+}
+/* munkalap-lezáráskor rövid zöld visszaigazolás a gépen */
+function resolveError(){
+  if (!errShown) return;
+  const ring = document.getElementById('ring');
+  document.getElementById('errtag').classList.remove('on');
+  ring.classList.add('on', 'ok');
+  setTimeout(hideAnchor, 5000);
+}
 function maybeShowError(text){
   if (errShown) return;
   if (/error\s*\+?\s*70|hetven|kondenz[aá]ci[oó]s tart[aá]ly/i.test(text)) {
     errShown = true;
     document.getElementById('ring').classList.add('on');
     document.getElementById('errtag').classList.add('on');
+    setTimeout(hideAnchor, 8000);
   }
 }
 
@@ -491,7 +500,7 @@ function renderReply(full){
         }
       } catch {}
     } else if (part.type === 'SUMMARY') {
-      try { showWorksheet(JSON.parse(part.content)); } catch {}
+      try { showWorksheet(JSON.parse(part.content)); resolveError(); } catch {}
     } else if (part.type === 'UI') {
       try { applyUi(JSON.parse(part.content).action); } catch {}
     }
@@ -777,10 +786,10 @@ function kbSend(){ const t = kbInput.value; kbInput.value=''; send(t); }
 document.getElementById('kb-send').onclick = kbSend;
 kbInput.addEventListener('keydown', e => { if (e.key === 'Enter') kbSend(); });
 
-/* ---- nyitány: mikrofon azonnal nyílik, szken fut, és a Copilot a JEGGYEL nyit ---- */
+/* ---- nyitány: mikrofon azonnal nyílik, szken fut, a Copilot semlegesen köszön ---- */
 const GREETING = '<<STEP>>\nGép azonosítva\n<</STEP>>\n' +
-  'Felismertem a gépet: MIKA-6E KON. A nyitott hibajegye: Error hetven — a kondenzációs tartály tele. Ezen dolgozunk?\n' +
-  '<<OPTIONS>>\n[{"label":"Igen, kezdjük a javítást"},{"label":"Más gondom van"},{"label":"Műszaki kérdésem van"}]\n<</OPTIONS>>';
+  'Felismertem a gépet: MIKA-6E KON kondenzációs kazán. Miben segítsek?\n' +
+  '<<OPTIONS>>\n[{"label":"Hibakódot látok a kijelzőn"},{"label":"Karbantartást végeznék"},{"label":"Műszaki kérdésem van"}]\n<</OPTIONS>>';
 function greet(){
   history.push({role:'assistant', content:GREETING});
   renderReply(GREETING);

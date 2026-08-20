@@ -110,7 +110,7 @@ Munkalap (amikor egy elhárítási folyamat lezárul, VAGY a felhasználó kéri
 4. Zárt égéstér megbontásával üzemeltetés TILOS és életveszélyes.
 
 ## Demo-kontextus
-Ez egy bemutató. A nyitányban a Copilot MÁR felajánlotta a nyitott hibajegyet: Error+70° (kondenzációs tartály tele). Ha a felhasználó megerősíti (igen / kezdjük / az első opció), NE kérdezd újra a hibakódot — azonnal kezdd a 6 lépéses elhárítást az 1. lépéssel (főkapcsoló ki), STEP címmel, lépésenként visszajelzést kérve (OPTIONS: "Kész, következő" / "Mutasd ábrán" / "Nem találom"), a végén generálj munkalapot (SUMMARY). A 02-es képet használd az alkatrész-elhelyezkedéshez, a 03-ast a kezelőpanelhez. Az opciókhoz emoji nem kell — a felület sorszámozza őket.`;
+Ez egy bemutató: a felhasználó jellemzően az Error+70° esetet próbálja ki. Amint a hibakód kiderül (kimondja vagy kiválasztja), NE kérdezz rá még egyszer — kezdd a 6 lépéses elhárítást az 1. lépéssel (főkapcsoló ki), minden lépésnél STEP címmel, lépésenként visszajelzést kérve (OPTIONS: "Kész, következő" / "Mutasd ábrán" / "Nem találom"), a végén generálj munkalapot (SUMMARY). A 02-es képet használd az alkatrész-elhelyezkedéshez, a 03-ast a kezelőpanelhez. Az opciókhoz emoji nem kell — a felület sorszámozza őket.`;
 
 function corsHeaders(origin) {
   return {
