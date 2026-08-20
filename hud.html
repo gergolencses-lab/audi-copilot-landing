@@ -131,13 +131,28 @@ body{
   width:min(380px, 32vw);display:none;flex-direction:column;
 }
 #diagram.on{display:flex}
-#diagram .imgwrap{padding:12px}
+#diagram .imgwrap{padding:12px;flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
 #diagram img{width:100%;max-height:52vh;object-fit:contain;border-radius:10px;background:#fff;display:block}
 #diagram .cap{padding:0 16px 13px;font-size:12.5px;color:var(--txt-dim);line-height:1.5;font-weight:300}
-#diagram .close{
-  position:absolute;top:9px;right:10px;z-index:2;border:1px solid rgba(255,255,255,.18);background:rgba(9,12,16,.6);
+#diagram .close, #diagram .zoombtn{
+  position:absolute;top:9px;z-index:2;border:1px solid rgba(255,255,255,.18);background:rgba(9,12,16,.6);
   color:var(--txt);width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:14px;line-height:1;font-family:inherit;
 }
+#diagram .close{right:10px}
+#diagram .zoombtn{right:42px;font-size:12px}
+/* nagy nézet: majdnem teljes képernyő — a hangsáv és a felső státuszsor SOHA nincs takarva */
+#diagram.zoom{
+  right:auto;left:50%;top:60px;bottom:124px;transform:translateX(-50%);
+  width:min(1240px, 94vw);max-height:none;animation:zoomin .3s var(--ease);
+}
+#diagram.zoom .imgwrap{height:100%}
+#diagram.zoom img{height:100%;width:100%;max-height:none;object-fit:contain;background:#fff}
+@keyframes zoomin{from{opacity:.4;transform:translateX(-50%) scale(.96)}to{opacity:1;transform:translateX(-50%) scale(1)}}
+#zoom-scrim{
+  position:fixed;inset:0;z-index:24;display:none;cursor:pointer;
+  background:rgba(5,7,10,.52);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
+}
+#zoom-scrim.on{display:block}
 
 /* ---- bottom: options + voice bar ---- */
 #chips{
@@ -237,7 +252,9 @@ body{
   <div id="worksheet"><ul id="ws-items"></ul><span class="badge" id="ws-badge">LEZÁRVA</span><div class="note" id="ws-note"></div></div>
 </div>
 
+<div id="zoom-scrim"></div>
 <div class="glass" id="diagram">
+  <button class="zoombtn" aria-label="Nagyítás / kicsinyítés">⤢</button>
   <button class="close" aria-label="Bezárás">×</button>
   <div class="p-head"><span class="dot"></span>Szakrajz · gépkönyv</div>
   <div class="imgwrap"><img id="dg-img" alt=""></div>
@@ -314,7 +331,7 @@ function setState(s, live){
 }
 function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-const blockRe = /<<(OPTIONS|IMAGE|SUMMARY)>>([\s\S]*?)<<\/\1>>/g;
+const blockRe = /<<(OPTIONS|IMAGE|SUMMARY|UI)>>([\s\S]*?)<<\/\1>>/g;
 function stripBlocks(s){
   s = s.replace(blockRe, ' ');
   const open = s.indexOf('<<');
@@ -356,13 +373,75 @@ function showWorksheet(sc){
   document.getElementById('ws-note').textContent = sc.note || '';
 }
 
-/* ---- jobb panel: szakrajz ---- */
+/* ---- jobb panel: szakrajz + nagy nézet ---- */
+const diagramEl = document.getElementById('diagram');
+let lastDiagram = null;
+function diagramOpen(){ return diagramEl.classList.contains('on'); }
+function diagramZoomed(){ return diagramEl.classList.contains('zoom'); }
 function showDiagram(path, cap){
+  lastDiagram = {path, cap};
   document.getElementById('dg-img').src = IMG_BASE + path;
   document.getElementById('dg-cap').textContent = cap || '';
-  document.getElementById('diagram').classList.add('on');
+  diagramEl.classList.add('on');
+  // új kép MINDIG normál méretben nyílik — nagy nézet csak kifejezett kérésre
+  if (diagramZoomed()) setZoom(false);
 }
-document.querySelector('#diagram .close').onclick = () => document.getElementById('diagram').classList.remove('on');
+function setZoom(on){
+  if (on && !diagramOpen() && lastDiagram) showDiagram(lastDiagram.path, lastDiagram.cap);
+  diagramEl.classList.toggle('zoom', on);
+  document.getElementById('zoom-scrim').classList.toggle('on', on);
+  // nagy nézetben a bal panel félrehúzódik — a rajz kapja a teret, a hangsáv marad
+  if (on) stepsPanel.dataset.wasOn = stepsPanel.classList.contains('on') ? '1' : '';
+  stepsPanel.classList.toggle('on', on ? false : stepsPanel.dataset.wasOn === '1' || stepsPanel.classList.contains('on'));
+}
+function closeDiagram(){ setZoom(false); diagramEl.classList.remove('on'); }
+document.querySelector('#diagram .close').onclick = closeDiagram;
+document.querySelector('#diagram .zoombtn').onclick = () => setZoom(!diagramZoomed());
+document.getElementById('zoom-scrim').onclick = () => setZoom(false);
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if (diagramZoomed()) setZoom(false); else closeDiagram(); }
+});
+
+/* ---- hangvezérelt felület-parancsok ---- */
+function applyUi(action){
+  switch (action) {
+    case 'zoom_in':
+      if (!diagramOpen() && !lastDiagram) return 'Most nincs rajz, amit kinagyíthatnék — kérj egyet, például: mutasd a kezelőpanelt.';
+      setZoom(true); return 'Kinagyítottam.';
+    case 'zoom_out':
+      if (!diagramZoomed()) return 'Már a normál nézetben vagyunk.';
+      setZoom(false); return 'Vissza a normál nézet.';
+    case 'close_diagram':
+      if (!diagramOpen()) return 'A rajz-ablak már zárva van.';
+      closeDiagram(); return 'Bezártam a rajzot.';
+    case 'open_diagram':
+      if (!lastDiagram) return 'Még nem néztünk meg rajzot — kérj egyet, például: mutasd az alkatrész-ábrát.';
+      showDiagram(lastDiagram.path, lastDiagram.cap); return 'Itt a rajz.';
+    case 'close_steps':
+      stepsPanel.classList.remove('on'); stepsPanel.dataset.wasOn = '';
+      return 'Bezártam a folyamat-panelt.';
+    case 'open_steps':
+      stepsPanel.classList.add('on'); return 'Itt a folyamat.';
+  }
+  return null;
+}
+const DIA_RE = /(rajz|ábr|abr|kép|kep|fénykép|fenykep|szakrajz)/;
+const PROC_RE = /(munkalap|munkamenet|folyamat|lépés|lepes|művelet|muvelet)/;
+function uiCommand(raw){
+  const t = raw.toLowerCase().replace(/[.,!?]/g,' ').replace(/\s+/g,' ').trim();
+  if (/(nagyíts|nagyits|nagyobban|nagyban|teljes képernyő|teljes kepernyo|told ki|nagy nézet|nagy nezet)/.test(t)
+      && (DIA_RE.test(t) || diagramOpen() || lastDiagram)) return 'zoom_in';
+  if (/(kicsinyíts|kicsinyits|kisebb|normál nézet|normal nezet|zárd össze|zard ossze)/.test(t)
+      || (/^vissza$/.test(t) && diagramZoomed())) return 'zoom_out';
+  if (/(zárd be|zard be|csukd be|tüntesd el|tuntesd el|vedd le)/.test(t)) {
+    if (DIA_RE.test(t)) return 'close_diagram';
+    if (PROC_RE.test(t)) return 'close_steps';
+    if (/ablak/.test(t)) return diagramZoomed() ? 'zoom_out' : (diagramOpen() ? 'close_diagram' : 'close_steps');
+  }
+  if (/^(nyisd (meg|ki)|mutasd|hozd vissza)( újra| ujra)?( a| az)? ?(rajzot|ábrát|abrat|képet|kepet|szakrajzot)$/.test(t)) return 'open_diagram';
+  if (/(nyisd (meg|ki)|hozd vissza|mutasd)/.test(t) && PROC_RE.test(t)) return 'open_steps';
+  return null;
+}
 
 /* ---- error-horgony (csak ha tényleg az E70-nél járunk, nem felsorolásban) ---- */
 let errShown = false;
@@ -407,6 +486,8 @@ function renderReply(full){
       } catch {}
     } else if (part.type === 'SUMMARY') {
       try { showWorksheet(JSON.parse(part.content)); } catch {}
+    } else if (part.type === 'UI') {
+      try { applyUi(JSON.parse(part.content).action); } catch {}
     }
   }
   const prose = stripBlocks(full);
@@ -474,6 +555,14 @@ function speakAll(full){ enqueueSpeech(stripBlocks(full)); }
 /* ---- chat ---- */
 async function send(text){
   if (busy || !text.trim()) return;
+  // felület-parancs? — helyben intézzük, LLM-kör nélkül
+  const ui = uiCommand(text);
+  if (ui) {
+    stopSpeech();
+    const confirm = applyUi(ui);
+    if (confirm) { vbText.textContent = confirm; enqueueSpeech(confirm); }
+    return;
+  }
   text = resolveNumber(text);
   busy = true;
   stopSpeech();

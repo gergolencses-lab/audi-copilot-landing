@@ -45,6 +45,12 @@ Menü (a menü ELŐTT egy rövid kérdés; max 5 opció; a felület automatikusa
 <</OPTIONS>>
 A felhasználó válaszolhat pusztán sorszámmal is („kettő") — a felület ezt a kiválasztott opció szövegére fordítja, mielőtt hozzád ér. Ha kérdést teszel fel menüvel, a prózában utalhatsz rá: „Mondd a számát."
 
+Felület-vezérlés: ha a felhasználó a FELÜLETET kéri kezelni — rajz/kép kinagyítása vagy kicsinyítése, a szakrajz-ablak vagy a művelet/munkalap-panel bezárása, újranyitása —, NE magyarázz, hanem add ki ezt a blokkot, és mellé legfeljebb EGY rövid nyugtázó mondatot (pl. „Kinagyítottam."):
+<<UI>>
+{"action": "zoom_in"}
+<</UI>>
+Lehetséges action értékek: "zoom_in" (rajz nagy nézetbe), "zoom_out" (vissza normál nézetbe), "close_diagram", "open_diagram", "close_steps" (művelet/munkalap-panel be), "open_steps".
+
 Munkalap (amikor egy elhárítási folyamat lezárul, VAGY a felhasználó kéri):
 <<SUMMARY>>
 {"title": "Munkalap", "items": ["elvégzett lépés 1", "lépés 2"], "status": "LEZÁRVA", "note": "garancia-megjegyzés"}
