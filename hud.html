@@ -136,7 +136,8 @@ button:focus-visible, input:focus-visible{outline:2px solid rgba(155,232,255,.8)
 }
 #diagram.on{display:flex}
 #diagram .imgwrap{padding:12px;flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
-#diagram img{width:100%;max-height:52vh;object-fit:contain;border-radius:10px;background:#fff;display:block;filter:brightness(.84) contrast(1.05)}
+#diagram img{width:100%;max-height:52vh;object-fit:contain;border-radius:10px;background:transparent;display:block}
+#diagram img.orig{background:#fff;filter:brightness(.84) contrast(1.05)}
 #diagram .cap{padding:0 16px 13px;font-size:13.5px;color:var(--txt-dim);line-height:1.5;font-weight:400}
 #diagram .close, #diagram .zoombtn{
   position:absolute;top:8px;z-index:2;border:1px solid rgba(255,255,255,.22);background:rgba(9,12,16,.65);
@@ -289,6 +290,7 @@ body.kb-open #chips{bottom:188px}
 <script>
 const PROXY = 'https://audi-copilot-proxy.gergo-lencses.workers.dev';
 const IMG_BASE = 'assets/gepkonyv/';
+const IMG_BASE_HUD = 'assets/gepkonyv-hud/'; // AR-blueprint változatok; ha nincs, esik vissza az eredetire
 
 /* ---- boiler-horgonyok: kép-koordináták → képernyő (cover + center/40% crop) ---- */
 const IMG_W = 1920, IMG_H = 1072;
@@ -379,7 +381,10 @@ function diagramOpen(){ return diagramEl.classList.contains('on'); }
 function diagramZoomed(){ return diagramEl.classList.contains('zoom'); }
 function showDiagram(path, cap){
   lastDiagram = {path, cap};
-  document.getElementById('dg-img').src = IMG_BASE + path;
+  const img = document.getElementById('dg-img');
+  img.classList.remove('orig');
+  img.onerror = () => { img.onerror = null; img.classList.add('orig'); img.src = IMG_BASE + path; };
+  img.src = IMG_BASE_HUD + path.replace(/\.png$/i, '.webp');
   document.getElementById('dg-cap').textContent = cap || '';
   diagramEl.classList.add('on');
   // új kép MINDIG normál méretben nyílik — nagy nézet csak kifejezett kérésre
