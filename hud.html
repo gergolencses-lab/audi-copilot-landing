@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maintenance Copilot — élő HUD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ice:#9BE8FF;
+  --red:#FF3355;
+  --ok:#45E0A0;
+  --txt:rgba(255,255,255,.92);
+  --txt-dim:rgba(255,255,255,.6);
+  --glass:linear-gradient(165deg, rgba(18,23,30,.60), rgba(9,12,16,.44));
+  --edge:rgba(255,255,255,.16);
+  --edge-top:rgba(255,255,255,.30);
+  --ease:cubic-bezier(0.75,0.02,0.5,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family:'Space Grotesk',-apple-system,system-ui,sans-serif;
+  color:var(--txt);-webkit-font-smoothing:antialiased;
+  background:#05070a url('assets/bg-demo.jpg') center 40%/cover no-repeat fixed;
+  overflow:hidden;
+}
+#stage{position:fixed;inset:0}
+#stage::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%, transparent 40%, rgba(5,7,10,.55) 100%)}
+
+.glass{
+  background:var(--glass);
+  backdrop-filter:blur(18px) saturate(150%);
+  -webkit-backdrop-filter:blur(18px) saturate(150%);
+  border:1px solid var(--edge);
+  border-top-color:var(--edge-top);
+  border-radius:18px;
+  position:relative;overflow:hidden;
+}
+.glass::before{
+  content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(115deg, transparent 30%, rgba(255,255,255,.055) 42%, rgba(255,255,255,.10) 46%, rgba(255,255,255,.055) 50%, transparent 62%);
+}
+.p-head{
+  display:flex;align-items:center;gap:8px;padding:12px 16px 10px;
+  font-size:10.5px;letter-spacing:.3em;text-transform:uppercase;color:var(--ice);font-weight:500;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.p-head .dot{width:6px;height:6px;border-radius:50%;background:var(--ice);box-shadow:0 0 10px rgba(155,232,255,.8)}
+
+/* ---- chrome ---- */
+.chip{
+  position:fixed;z-index:30;display:flex;align-items:center;gap:9px;
+  padding:9px 15px;font-size:11px;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--txt);border-radius:999px;
+}
+#brand{top:20px;left:22px}
+#brand svg{opacity:.85}
+#machine{top:20px;right:22px;color:var(--txt-dim)}
+#machine b{color:var(--txt);font-weight:500}
+
+/* ---- scan intro ---- */
+#scanbox{position:fixed;z-index:20;pointer-events:none;opacity:0}
+#scanbox.on{opacity:1}
+#scanbox .c{position:absolute;width:56px;height:56px;border:3px solid var(--ice);filter:drop-shadow(0 0 8px rgba(155,232,255,.6))}
+#scanbox .c1{top:0;left:0;border-right:none;border-bottom:none}
+#scanbox .c2{top:0;right:0;border-left:none;border-bottom:none}
+#scanbox .c3{bottom:0;left:0;border-right:none;border-top:none}
+#scanbox .c4{bottom:0;right:0;border-left:none;border-top:none}
+#scanbox .sweep{
+  position:absolute;left:4%;right:4%;height:2px;top:0;
+  background:linear-gradient(90deg, transparent, rgba(155,232,255,.9), transparent);
+  animation:sweep 1.4s var(--ease) 1;
+}
+@keyframes sweep{from{top:2%}to{top:96%}}
+#idtag{
+  position:fixed;z-index:21;padding:10px 16px;font-size:12px;letter-spacing:.14em;
+  opacity:0;transform:translateY(10px);transition:opacity .5s var(--ease), transform .5s var(--ease);
+}
+#idtag.on{opacity:1;transform:none}
+#idtag b{color:var(--ice);font-weight:600}
+
+/* ---- anchor ring + error tag ---- */
+#ring{
+  position:fixed;z-index:18;border:2.5px solid var(--red);border-radius:14px;
+  box-shadow:0 0 18px rgba(255,51,85,.45), inset 0 0 18px rgba(255,51,85,.2);
+  opacity:0;transition:opacity .6s var(--ease);pointer-events:none;
+}
+#ring.on{opacity:1;animation:ringpulse 2.4s var(--ease) infinite}
+@keyframes ringpulse{0%,100%{box-shadow:0 0 18px rgba(255,51,85,.45), inset 0 0 18px rgba(255,51,85,.2)}50%{box-shadow:0 0 30px rgba(255,51,85,.7), inset 0 0 24px rgba(255,51,85,.3)}}
+#errtag{
+  position:fixed;z-index:19;padding:9px 14px;border-radius:12px;
+  border:1px solid rgba(255,51,85,.5);
+  font-size:12px;letter-spacing:.1em;opacity:0;transform:translateY(8px);
+  transition:opacity .5s var(--ease), transform .5s var(--ease);pointer-events:none;
+}
+#errtag.on{opacity:1;transform:none}
+#errtag .e{color:var(--red);font-weight:600;letter-spacing:.2em}
+#errtag .d{color:var(--txt-dim);font-size:11px;margin-top:2px}
+
+/* ---- left: steps / worksheet ---- */
+#steps{
+  position:fixed;z-index:25;left:26px;top:50%;transform:translateY(-54%);
+  width:min(320px, 30vw);max-height:62vh;display:none;flex-direction:column;
+}
+#steps.on{display:flex}
+#steps-list{padding:10px 16px 14px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(155,232,255,.25) transparent}
+.step{display:flex;gap:11px;padding:8px 0;font-size:13.5px;line-height:1.45;font-weight:300;color:var(--txt-dim);align-items:flex-start}
+.step .m{flex:none;width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(255,255,255,.3);margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:10px}
+.step.done{color:rgba(255,255,255,.42)}
+.step.done .m{border-color:rgba(69,224,160,.7);color:var(--ok)}
+.step.done .m::before{content:'✓'}
+.step.act{color:var(--txt)}
+.step.act .m{border-color:var(--ice);box-shadow:0 0 10px rgba(155,232,255,.5)}
+.step.act .m::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--ice)}
+#worksheet{padding:12px 16px 16px;display:none}
+#worksheet.on{display:block}
+#worksheet li{list-style:none;font-size:13px;padding:4.5px 0;color:var(--txt-dim);display:flex;gap:9px;font-weight:300}
+#worksheet li::before{content:'✓';color:var(--ok);font-weight:600}
+#worksheet .badge{
+  display:inline-block;margin-top:10px;font-size:10.5px;letter-spacing:.22em;color:var(--ok);
+  border:1px solid rgba(69,224,160,.5);padding:4px 11px;border-radius:999px;
+}
+#worksheet .note{margin-top:9px;font-size:11.5px;color:var(--txt-dim);font-style:italic;line-height:1.5}
+
+/* ---- right: diagram ---- */
+#diagram{
+  position:fixed;z-index:25;right:26px;top:50%;transform:translateY(-54%);
+  width:min(380px, 32vw);display:none;flex-direction:column;
+}
+#diagram.on{display:flex}
+#diagram .imgwrap{padding:12px}
+#diagram img{width:100%;max-height:52vh;object-fit:contain;border-radius:10px;background:#fff;display:block}
+#diagram .cap{padding:0 16px 13px;font-size:12.5px;color:var(--txt-dim);line-height:1.5;font-weight:300}
+#diagram .close{
+  position:absolute;top:9px;right:10px;z-index:2;border:1px solid rgba(255,255,255,.18);background:rgba(9,12,16,.6);
+  color:var(--txt);width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:14px;line-height:1;font-family:inherit;
+}
+
+/* ---- bottom: options + voice bar ---- */
+#chips{
+  position:fixed;z-index:28;bottom:118px;left:50%;transform:translateX(-50%);
+  display:flex;flex-wrap:wrap;gap:9px;justify-content:center;max-width:min(760px,92vw);
+}
+.opt-chip{
+  border:1px solid rgba(155,232,255,.4);background:rgba(12,17,23,.55);color:var(--txt);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  padding:10px 17px;border-radius:999px;font-size:13.5px;font-family:inherit;cursor:pointer;
+  transition:background .2s var(--ease), transform .2s var(--ease);
+  animation:chipin .4s var(--ease);
+}
+@keyframes chipin{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.opt-chip:hover{background:rgba(155,232,255,.16);transform:translateY(-1px)}
+.opt-chip .n{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:20px;height:20px;border-radius:50%;margin-right:9px;
+  border:1px solid rgba(155,232,255,.6);color:var(--ice);
+  font-size:11.5px;font-weight:600;vertical-align:-4px;
+}
+.img-open{border-color:rgba(155,232,255,.55);color:var(--ice)}
+
+#voicebar{
+  position:fixed;z-index:29;bottom:26px;left:50%;transform:translateX(-50%);
+  width:min(720px, 94vw);display:flex;align-items:center;gap:14px;padding:12px 16px;
+  border-radius:999px;
+}
+#mic{
+  flex:none;width:56px;height:56px;border-radius:50%;border:1px solid rgba(155,232,255,.4);
+  background:rgba(155,232,255,.1);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:background .2s;touch-action:none;-webkit-user-select:none;user-select:none;
+}
+#mic svg{width:23px;height:23px;stroke:var(--ice);fill:none;stroke-width:1.8;stroke-linecap:round}
+#mic.rec{background:rgba(255,51,85,.18);border-color:rgba(255,51,85,.6);animation:pulse 1.4s infinite}
+#mic.rec svg{stroke:var(--red)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,51,85,.35)}70%{box-shadow:0 0 0 15px rgba(255,51,85,0)}100%{box-shadow:0 0 0 0 rgba(255,51,85,0)}}
+#wave{flex:none;display:flex;align-items:center;gap:3px;height:26px}
+#wave span{width:3px;border-radius:2px;background:var(--ice);height:6px;opacity:.45;transition:opacity .3s}
+#wave.live span{opacity:1;animation:wv 1s ease-in-out infinite}
+#wave span:nth-child(1){animation-delay:0s}#wave span:nth-child(2){animation-delay:.15s}
+#wave span:nth-child(3){animation-delay:.3s}#wave span:nth-child(4){animation-delay:.45s}
+#wave span:nth-child(5){animation-delay:.6s}
+@keyframes wv{0%,100%{height:6px}50%{height:22px}}
+#vb-main{flex:1;min-width:0}
+#vb-state{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--ice);margin-bottom:3px;font-weight:500}
+#vb-text{
+  font-size:14.5px;line-height:1.4;font-weight:300;color:var(--txt);
+  max-height:2.8em;overflow:hidden;
+}
+#kb-btn{
+  flex:none;border:none;background:none;cursor:pointer;padding:8px;color:rgba(255,255,255,.45);
+}
+#kb-btn:hover{color:var(--ice)}
+#kb-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round}
+#kb-row{
+  position:fixed;z-index:29;bottom:96px;left:50%;transform:translateX(-50%);
+  width:min(600px,90vw);display:none;gap:10px;padding:10px;border-radius:16px;
+}
+#kb-row.on{display:flex}
+#kb-input{
+  flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:10px;
+  color:var(--txt);font-family:inherit;font-size:14.5px;padding:11px 14px;outline:none;font-weight:300;
+}
+#kb-input:focus{border-color:rgba(155,232,255,.4)}
+#kb-send{border:none;background:none;cursor:pointer;color:var(--ice);padding:8px}
+#kb-send svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---- responsive ---- */
+@media(max-width:900px){
+  #steps{left:12px;width:min(280px,44vw);top:auto;bottom:200px;transform:none;max-height:34vh}
+  #diagram{right:12px;left:12px;width:auto;top:auto;bottom:200px;transform:none;max-height:44vh;overflow:auto}
+  #chips{bottom:108px}
+  #machine{display:none}
+}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+
+<div class="chip glass" id="brand">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9BE8FF" stroke-width="2"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="9" opacity=".4"/></svg>
+  Maintenance Copilot
+</div>
+<div class="chip glass" id="machine"><b>MIKA-6E KON</b> · Gépház 03 · <span id="clock"></span></div>
+
+<div id="scanbox"><div class="c c1"></div><div class="c c2"></div><div class="c c3"></div><div class="c c4"></div><div class="sweep"></div></div>
+<div class="glass" id="idtag"><b>MIKA-6E KON</b> · azonosítva · nyitott hibajegy: 1</div>
+
+<div id="ring"></div>
+<div class="glass" id="errtag"><div class="e">ERROR · 70</div><div class="d">Kondenzációs tartály tele</div></div>
+
+<div class="glass" id="steps">
+  <div class="p-head"><span class="dot"></span><span id="steps-title">Művelet · folyamat</span></div>
+  <div id="steps-list"></div>
+  <div id="worksheet"><ul id="ws-items"></ul><span class="badge" id="ws-badge">LEZÁRVA</span><div class="note" id="ws-note"></div></div>
+</div>
+
+<div class="glass" id="diagram">
+  <button class="close" aria-label="Bezárás">×</button>
+  <div class="p-head"><span class="dot"></span>Szakrajz · gépkönyv</div>
+  <div class="imgwrap"><img id="dg-img" alt=""></div>
+  <div class="cap" id="dg-cap"></div>
+</div>
+
+<div id="chips"></div>
+
+<div class="glass" id="kb-row">
+  <input id="kb-input" type="text" placeholder="Írd ide…" autocomplete="off">
+  <button id="kb-send" aria-label="Küldés"><svg viewBox="0 0 24 24"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg></button>
+</div>
+
+<div class="glass" id="voicebar">
+  <button id="mic" aria-label="Nyomd és tartsd a beszédhez">
+    <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+  </button>
+  <div id="wave"><span></span><span></span><span></span><span></span><span></span></div>
+  <div id="vb-main">
+    <div id="vb-state">Copilot</div>
+    <div id="vb-text">…</div>
+  </div>
+  <button id="kb-btn" aria-label="Billentyűzet">
+    <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M18 14h.01M9 14h6"/></svg>
+  </button>
+</div>
+
+<script>
+const PROXY = 'https://audi-copilot-proxy.gergo-lencses.workers.dev';
+const IMG_BASE = 'assets/gepkonyv/';
+
+/* ---- óra ---- */
+const clockEl = document.getElementById('clock');
+function tick(){ clockEl.textContent = new Date().toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'}); }
+tick(); setInterval(tick, 20000);
+
+/* ---- boiler-horgonyok: kép-koordináták → képernyő (cover + center/40% crop) ---- */
+const IMG_W = 1920, IMG_H = 1072;
+// a bg-demo.jpg-ben mért dobozok (px): kazán teste + az E70 kijelző sávja
+const BOILER = {x: 820, y: 150, w: 370, h: 590};
+const DISPLAY = {x: 1048, y: 560, w: 120, h: 150};
+function imgToScreen(b){
+  const W = innerWidth, H = innerHeight;
+  const s = Math.max(W/IMG_W, H/IMG_H);
+  const ox = (W - IMG_W*s)*0.5, oy = (H - IMG_H*s)*0.4;
+  return {x: ox + b.x*s, y: oy + b.y*s, w: b.w*s, h: b.h*s};
+}
+function layoutAnchors(){
+  const bo = imgToScreen(BOILER), di = imgToScreen(DISPLAY);
+  document.getElementById('scanbox').style.cssText +=
+    `;left:${bo.x-26}px;top:${bo.y-26}px;width:${bo.w+52}px;height:${bo.h+52}px`;
+  document.getElementById('idtag').style.cssText += `;left:${bo.x+bo.w+26}px;top:${bo.y+16}px`;
+  document.getElementById('ring').style.cssText +=
+    `;left:${di.x}px;top:${di.y}px;width:${di.w}px;height:${di.h}px`;
+  document.getElementById('errtag').style.cssText +=
+    `;left:${bo.x-20}px;top:${di.y+6}px;transform:translateX(-100%)`;
+}
+addEventListener('resize', layoutAnchors);
+layoutAnchors();
+
+/* ---- állapot ---- */
+const vbState = document.getElementById('vb-state');
+const vbText = document.getElementById('vb-text');
+const wave = document.getElementById('wave');
+const mic = document.getElementById('mic');
+const chipsEl = document.getElementById('chips');
+const history = [];
+let busy = false;
+let player = new Audio();
+
+function setState(s, live){
+  vbState.textContent = s;
+  wave.classList.toggle('live', !!live);
+}
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+const blockRe = /<<(OPTIONS|IMAGE|SUMMARY)>>([\s\S]*?)<<\/\1>>/g;
+function stripBlocks(s){
+  s = s.replace(blockRe, ' ');
+  const open = s.indexOf('<<');
+  if (open !== -1) s = s.slice(0, open);
+  return s.replace(/\*\*/g,'').replace(/\s+/g,' ').trim();
+}
+function parseSegments(s){
+  const parts = []; let last = 0; let m;
+  blockRe.lastIndex = 0;
+  while ((m = blockRe.exec(s)) !== null) {
+    if (m.index > last) parts.push({type:'text', content:s.slice(last, m.index)});
+    parts.push({type:m[1], content:m[2].trim()});
+    last = blockRe.lastIndex;
+  }
+  if (last < s.length) parts.push({type:'text', content:s.slice(last)});
+  return parts;
+}
+
+/* ---- bal panel: lépések ---- */
+const stepsPanel = document.getElementById('steps');
+const stepsList = document.getElementById('steps-list');
+function addStep(text){
+  stepsPanel.classList.add('on');
+  stepsList.querySelectorAll('.step.act').forEach(el => { el.classList.remove('act'); el.classList.add('done'); });
+  const el = document.createElement('div');
+  el.className = 'step act';
+  el.innerHTML = `<span class="m"></span><span>${esc(text)}</span>`;
+  stepsList.appendChild(el);
+  stepsList.scrollTop = stepsList.scrollHeight;
+}
+function showWorksheet(sc){
+  stepsPanel.classList.add('on');
+  document.getElementById('steps-title').textContent = sc.title || 'Munkalap';
+  stepsList.style.display = 'none';
+  const ws = document.getElementById('worksheet');
+  ws.classList.add('on');
+  document.getElementById('ws-items').innerHTML = (sc.items||[]).map(i=>`<li>${esc(i)}</li>`).join('');
+  document.getElementById('ws-badge').textContent = sc.status || 'LEZÁRVA';
+  document.getElementById('ws-note').textContent = sc.note || '';
+}
+
+/* ---- jobb panel: szakrajz ---- */
+function showDiagram(path, cap){
+  document.getElementById('dg-img').src = IMG_BASE + path;
+  document.getElementById('dg-cap').textContent = cap || '';
+  document.getElementById('diagram').classList.add('on');
+}
+document.querySelector('#diagram .close').onclick = () => document.getElementById('diagram').classList.remove('on');
+
+/* ---- error-horgony (csak ha tényleg az E70-nél járunk, nem felsorolásban) ---- */
+let errShown = false;
+function maybeShowError(text){
+  if (errShown) return;
+  if (/error\s*\+?\s*70|hetven|kondenz[aá]ci[oó]s tart[aá]ly/i.test(text)) {
+    errShown = true;
+    document.getElementById('ring').classList.add('on');
+    document.getElementById('errtag').classList.add('on');
+  }
+}
+
+/* ---- render egy kész bot-válaszból ---- */
+let lastOptions = [];
+function renderReply(full){
+  chipsEl.innerHTML = '';
+  lastOptions = [];
+  let diagramShown = false;
+  for (const part of parseSegments(full)) {
+    if (part.type === 'OPTIONS') {
+      try {
+        JSON.parse(part.content).slice(0,6).forEach((o, i) => {
+          lastOptions.push(o.label);
+          const b = document.createElement('button');
+          b.className = 'opt-chip';
+          b.innerHTML = `<span class="n">${i+1}</span>${esc(o.label)}`;
+          b.onclick = () => { if (!busy) send(o.label); };
+          chipsEl.appendChild(b);
+        });
+      } catch {}
+    } else if (part.type === 'IMAGE') {
+      try {
+        const im = JSON.parse(part.content);
+        if (!diagramShown) { showDiagram(im.path, im.caption || im.alt); diagramShown = true; }
+        else {
+          const b = document.createElement('button');
+          b.className = 'opt-chip img-open';
+          b.textContent = '📐 ' + (im.caption || im.alt || 'Ábra');
+          b.onclick = () => showDiagram(im.path, im.caption || im.alt);
+          chipsEl.appendChild(b);
+        }
+      } catch {}
+    } else if (part.type === 'SUMMARY') {
+      try { showWorksheet(JSON.parse(part.content)); } catch {}
+    }
+  }
+  const prose = stripBlocks(full);
+  if (prose) { vbText.textContent = prose; addStep(prose); }
+  maybeShowError(prose);
+}
+
+/* kimondott/beírt sorszám → opció (pl. „kettő" → a 2. chip szövege) */
+const NUM_WORDS = {'egy':1,'kettő':2,'ketto':2,'kettőt':2,'három':3,'harom':3,'hármat':3,'négy':4,'negy':4,'négyet':4,'öt':5,'ot':5,'ötöt':5,'hat':6,'hatot':6};
+function resolveNumber(text){
+  const t = text.toLowerCase().replace(/[.,!?]/g,'').trim();
+  let n = null;
+  if (/^\d{1,2}$/.test(t)) n = parseInt(t, 10);
+  else if (NUM_WORDS[t] !== undefined) n = NUM_WORDS[t];
+  else {
+    const m = t.match(/^az?\s+(\S+)/);
+    if (m && NUM_WORDS[m[1]] !== undefined) n = NUM_WORDS[m[1]];
+  }
+  if (n !== null && n >= 1 && n <= lastOptions.length) return lastOptions[n-1];
+  return text;
+}
+
+/* ---- TTS ---- */
+async function speak(full){
+  let t = stripBlocks(full);
+  if (!t) { setState('Copilot', false); return; }
+  if (t.length > 580) t = t.slice(0, 580);
+  try {
+    const r = await fetch(PROXY + '/tts', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({text: t}),
+    });
+    if (!r.ok) { setState('Copilot', false); return; }
+    const blob = await r.blob();
+    player.src = URL.createObjectURL(blob);
+    setState('Beszél', true);
+    player.onended = () => setState('Copilot', false);
+    await player.play().catch(()=>setState('Copilot', false));
+  } catch { setState('Copilot', false); }
+}
+
+/* ---- chat ---- */
+async function send(text){
+  if (busy || !text.trim()) return;
+  text = resolveNumber(text);
+  busy = true;
+  player.pause();
+  chipsEl.innerHTML = '';
+  maybeShowError(text);
+  history.push({role:'user', content:text});
+  setState('Gondolkodik', true);
+  vbText.textContent = '…';
+
+  let full = '';
+  try {
+    const r = await fetch(PROXY + '/chat', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({messages: history.slice(-20)}),
+    });
+    if (r.status === 429) throw new Error('rate');
+    if (!r.ok) throw new Error('http' + r.status);
+    const reader = r.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, {stream:true});
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue;
+        let ev; try { ev = JSON.parse(line.slice(5)); } catch { continue; }
+        if (ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'text_delta') {
+          full += ev.delta.text;
+          const live = stripBlocks(full);
+          if (live) vbText.textContent = live;
+        } else if (ev.type === 'error') {
+          throw new Error((ev.error && ev.error.type) || 'stream');
+        }
+      }
+    }
+    history.push({role:'assistant', content:full});
+    renderReply(full);
+    speak(full);
+  } catch (e) {
+    history.pop();
+    setState('Hiba', false);
+    vbText.textContent = e.message === 'rate'
+      ? 'Sok kérés fut egyszerre — várj egy percet, aztán próbáld újra.'
+      : 'Megszakadt a kapcsolat — próbáld újra.';
+  }
+  busy = false;
+}
+
+/* ---- push-to-talk ---- */
+let rec = null, chunks = [], recStream = null;
+function recMime(){
+  if (window.MediaRecorder) {
+    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) return 'audio/webm;codecs=opus';
+    if (MediaRecorder.isTypeSupported('audio/mp4')) return 'audio/mp4';
+  }
+  return '';
+}
+async function startRec(){
+  if (busy || rec) return;
+  player.pause(); setState('Copilot', false);
+  try { recStream = await navigator.mediaDevices.getUserMedia({audio:true}); }
+  catch { setState('Nincs mikrofon-engedély', false); return; }
+  chunks = [];
+  const mime = recMime();
+  rec = new MediaRecorder(recStream, mime ? {mimeType:mime} : undefined);
+  rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+  rec.onstop = async () => {
+    recStream.getTracks().forEach(t=>t.stop());
+    mic.classList.remove('rec');
+    const type = rec.mimeType || 'audio/webm';
+    rec = null;
+    const blob = new Blob(chunks, {type});
+    if (blob.size < 2000) { setState('Copilot', false); return; }
+    setState('Átírás', true);
+    const fd = new FormData();
+    fd.append('file', blob, type.includes('mp4') ? 'q.m4a' : 'q.webm');
+    try {
+      const r = await fetch(PROXY + '/stt', {method:'POST', body:fd});
+      if (r.status === 429) { setState('Sok kérés — várj egy percet', false); return; }
+      const {text} = await r.json();
+      const clean = (text||'').replace(/\[[^\]]*\]/g,'').trim();
+      if (clean) send(clean);
+      else setState('Nem hallottam — próbáld újra', false);
+    } catch { setState('Az átírás nem sikerült', false); }
+  };
+  rec.start();
+  mic.classList.add('rec');
+  setState('Hallgatlak', true);
+  vbText.textContent = 'Tartsd nyomva, amíg beszélsz…';
+}
+function stopRec(){ if (rec && rec.state === 'recording') rec.stop(); }
+mic.addEventListener('pointerdown', e => { e.preventDefault(); startRec(); });
+mic.addEventListener('pointerup', stopRec);
+mic.addEventListener('pointerleave', stopRec);
+mic.addEventListener('contextmenu', e => e.preventDefault());
+
+/* ---- billentyűzet-fallback ---- */
+const kbRow = document.getElementById('kb-row');
+const kbInput = document.getElementById('kb-input');
+document.getElementById('kb-btn').onclick = () => { kbRow.classList.toggle('on'); if (kbRow.classList.contains('on')) kbInput.focus(); };
+function kbSend(){ const t = kbInput.value; kbInput.value=''; send(t); }
+document.getElementById('kb-send').onclick = kbSend;
+kbInput.addEventListener('keydown', e => { if (e.key === 'Enter') kbSend(); });
+
+/* ---- nyitány: szken → azonosítás → köszönés ---- */
+const GREETING = 'Felismertem a gépet: MIKA-6E KON kondenzációs kazán — és látom, van egy nyitott hibajegye. Miben segítsek?\n' +
+  '<<OPTIONS>>\n[{"label":"Hibakódot látok a kijelzőn","emoji":"🔥"},{"label":"Karbantartást végeznék","emoji":"🛠️"},{"label":"Műszaki kérdésem van","emoji":"📖"}]\n<</OPTIONS>>';
+setState('Szkennelés', true);
+vbText.textContent = 'Gép azonosítása…';
+document.getElementById('scanbox').classList.add('on');
+setTimeout(() => {
+  document.getElementById('scanbox').classList.remove('on');
+  document.getElementById('idtag').classList.add('on');
+}, 1500);
+setTimeout(() => {
+  history.push({role:'assistant', content:GREETING});
+  renderReply(GREETING);
+  setState('Copilot', false);
+  // a nyitó üzenetet nem olvassuk fel automatikusan — böngésző-autoplay tiltás miatt
+  // az első felhasználói interakció után már minden válasz hangzik is
+}, 1900);
+</script>
+</body>
+</html>

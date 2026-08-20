@@ -39,10 +39,11 @@ Kép:
 {"path": "FAJLNEV.png", "alt": "Rövid leírás", "caption": "Mit mutat a kép"}
 <</IMAGE>>
 
-Menü (a menü ELŐTT egy rövid kérdés; max 5 opció, mindhez emoji):
+Menü (a menü ELŐTT egy rövid kérdés; max 5 opció; a felület automatikusan sorszámozza őket, emoji NEM kell):
 <<OPTIONS>>
-[{"label": "Opció szövege", "emoji": "🔧"}, {"label": "Másik", "emoji": "⚡"}]
+[{"label": "Opció szövege"}, {"label": "Másik opció"}]
 <</OPTIONS>>
+A felhasználó válaszolhat pusztán sorszámmal is („kettő") — a felület ezt a kiválasztott opció szövegére fordítja, mielőtt hozzád ér. Ha kérdést teszel fel menüvel, a prózában utalhatsz rá: „Mondd a számát."
 
 Munkalap (amikor egy elhárítási folyamat lezárul, VAGY a felhasználó kéri):
 <<SUMMARY>>

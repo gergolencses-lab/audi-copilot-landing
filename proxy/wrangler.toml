@@ -7,7 +7,7 @@ compatibility_date = "2026-08-01"
 #   printf '%s' "$ELEVENLABS_API_KEY" | npx wrangler secret put ELEVENLABS_API_KEY
 
 [vars]
-VOICE_ID = "onwK4e9ZLuTAKqWW03F9"   # placeholder (premade Daniel) — G1 után csere a Magyar Férfi PVC id-re
+VOICE_ID = "TumdjBNWanlT3ysvclWh"   # Magyar Férfi PVC — a vízió-film hangja
 MODEL = "claude-sonnet-5"
 
 [[unsafe.bindings]]

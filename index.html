@@ -115,75 +115,23 @@ section.block{padding:120px 24px;position:relative}
     url('assets/bg-demo.jpg') center 38%/cover no-repeat fixed;
 }
 @media(max-width:900px){#demo{background-attachment:scroll}}
-#demo-layout{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);gap:22px;align-items:start}
-@media(max-width:900px){#demo-layout{grid-template-columns:1fr}}
-
-#chat-panel{display:flex;flex-direction:column;height:min(640px,72vh)}
-#chat-log{flex:1;overflow-y:auto;padding:22px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:rgba(155,232,255,.25) transparent}
-.msg{max-width:88%;padding:12px 16px;border-radius:14px;font-size:15px;line-height:1.55;font-weight:300;animation:msgin .3s var(--ease)}
-@keyframes msgin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.msg.user{align-self:flex-end;background:rgba(155,232,255,.12);border:1px solid rgba(155,232,255,.22)}
-.msg.bot{align-self:flex-start;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
-.msg.bot strong{font-weight:600;color:#fff}
-.msg .opts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.opt-chip{
-  border:1px solid rgba(155,232,255,.35);background:rgba(155,232,255,.07);color:var(--txt);
-  padding:8px 14px;border-radius:999px;font-size:13.5px;font-family:inherit;cursor:pointer;
-  transition:background .2s var(--ease), transform .2s var(--ease);
+#launcher{max-width:760px;margin:0 auto;padding:44px 40px;text-align:center}
+#launcher .hud-row{display:flex;justify-content:center;gap:14px;margin-bottom:28px;flex-wrap:wrap}
+#launcher .hud-tag{
+  font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--txt-dim);
+  border:1px solid rgba(255,255,255,.14);padding:8px 14px;border-radius:999px;
 }
-.opt-chip:hover{background:rgba(155,232,255,.16);transform:translateY(-1px)}
-.opt-chip:disabled{opacity:.4;cursor:default;transform:none}
-.img-chip{
-  display:flex;align-items:center;gap:10px;margin-top:12px;padding:9px 13px;border-radius:12px;
-  border:1px solid rgba(155,232,255,.3);background:rgba(155,232,255,.06);cursor:pointer;
-  font-size:13.5px;color:var(--ice);font-family:inherit;transition:background .2s;
+#launcher .hud-tag b{color:var(--ice);font-weight:500}
+#launch-btn{
+  display:inline-flex;align-items:center;gap:14px;
+  border:1px solid rgba(155,232,255,.5);background:rgba(155,232,255,.1);color:var(--txt);
+  font-family:inherit;font-size:17px;font-weight:500;letter-spacing:.04em;
+  padding:18px 34px;border-radius:999px;cursor:pointer;text-decoration:none;
+  transition:background .25s var(--ease), transform .25s var(--ease);
 }
-.img-chip:hover{background:rgba(155,232,255,.14)}
-.img-chip svg{flex:none}
-.summary-card{margin-top:12px;border:1px solid rgba(69,224,160,.35);border-radius:14px;padding:14px 16px;background:rgba(69,224,160,.06)}
-.summary-card .sc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.summary-card .sc-title{font-weight:600;font-size:14px;letter-spacing:.06em;text-transform:uppercase}
-.summary-card .sc-badge{font-size:11px;letter-spacing:.18em;color:var(--ok);border:1px solid rgba(69,224,160,.5);padding:3px 9px;border-radius:999px}
-.summary-card li{list-style:none;font-size:13.5px;padding:4px 0;color:var(--txt-dim);display:flex;gap:8px}
-.summary-card li::before{content:'✓';color:var(--ok);font-weight:600}
-.summary-card .sc-note{margin-top:8px;font-size:12px;color:var(--txt-dim);font-style:italic}
-
-#voicebar{padding:14px 18px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:12px}
-#mic-btn{
-  flex:none;width:58px;height:58px;border-radius:50%;border:1px solid rgba(155,232,255,.4);
-  background:rgba(155,232,255,.1);cursor:pointer;display:flex;align-items:center;justify-content:center;
-  transition:background .2s, box-shadow .2s;position:relative;touch-action:none;
-  -webkit-user-select:none;user-select:none;
-}
-#mic-btn svg{width:24px;height:24px;stroke:var(--ice);fill:none;stroke-width:1.8;stroke-linecap:round}
-#mic-btn.rec{background:rgba(255,51,85,.18);border-color:rgba(255,51,85,.6);box-shadow:0 0 0 0 rgba(255,51,85,.4);animation:pulse 1.4s infinite}
-#mic-btn.rec svg{stroke:var(--red)}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,51,85,.35)}70%{box-shadow:0 0 0 16px rgba(255,51,85,0)}100%{box-shadow:0 0 0 0 rgba(255,51,85,0)}}
-#text-input{
-  flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:12px;
-  color:var(--txt);font-family:inherit;font-size:15px;padding:13px 16px;outline:none;font-weight:300;
-}
-#text-input:focus{border-color:rgba(155,232,255,.4)}
-#text-input::placeholder{color:rgba(255,255,255,.3)}
-#send-btn{
-  flex:none;border:none;background:none;cursor:pointer;padding:10px;color:var(--ice);
-}
-#send-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-#status-line{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--txt-dim);padding:0 22px 12px;min-height:16px;transition:color .2s}
-#status-line.active{color:var(--ice)}
-#status-line.err{color:var(--red)}
-
-#image-panel{position:sticky;top:24px;padding:18px;display:none;flex-direction:column;gap:12px}
-#image-panel.open{display:flex}
-#image-panel img{width:100%;border-radius:10px;background:#fff}
-#image-panel .cap{font-size:13.5px;color:var(--txt-dim);line-height:1.5}
-#image-panel .close{
-  position:absolute;top:12px;right:12px;z-index:2;border:1px solid rgba(255,255,255,.2);background:rgba(9,12,16,.7);
-  color:var(--txt);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;line-height:1;font-family:inherit;
-}
-@media(max-width:900px){
-  #image-panel{position:fixed;inset:auto 12px 12px 12px;z-index:60;max-height:70vh;overflow:auto;box-shadow:0 -10px 60px rgba(0,0,0,.6)}
-}
+#launch-btn:hover{background:rgba(155,232,255,.2);transform:translateY(-2px)}
+#launch-btn svg{width:20px;height:20px;fill:var(--ice)}
+#launcher .mic-note{margin-top:18px;font-size:13px;color:var(--txt-dim);font-weight:300}
 
 /* ---------- FOOTER ---------- */
 footer{padding:70px 24px 46px;text-align:center;border-top:1px solid rgba(255,255,255,.06)}
@@ -244,23 +192,17 @@ footer .zel{margin-top:6px;font-size:12px;letter-spacing:.3em;text-transform:upp
     <h2>Próbáld ki — most</h2>
     <p>Ez nem mockup: a bot él. A Copilot mindig annak a gépnek a gépkönyvét tölti be, amelyik előtt állsz — ma egy MIKA-6E KON kazánét, holnap egy présgépét vagy robotcelláét. Nyomd meg és tartsd a mikrofont, vagy írj. A kazán kedvenc hibája az <strong>Error + 70°</strong>.</p>
   </div>
-  <div id="demo-layout">
-    <div class="glass" id="chat-panel">
-      <div id="chat-log"></div>
-      <div id="status-line"></div>
-      <div id="voicebar">
-        <button id="mic-btn" aria-label="Nyomd és tartsd a beszédhez">
-          <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
-        </button>
-        <input id="text-input" type="text" placeholder="…vagy írd ide" autocomplete="off">
-        <button id="send-btn" aria-label="Küldés"><svg viewBox="0 0 24 24"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg></button>
-      </div>
+  <div class="glass" id="launcher">
+    <div class="hud-row">
+      <span class="hud-tag">◀ <b>Művelet-panel</b></span>
+      <span class="hud-tag"><b>Szakrajz</b> ▶</span>
+      <span class="hud-tag">▼ <b>Hangsáv</b></span>
     </div>
-    <div class="glass" id="image-panel">
-      <button class="close" aria-label="Bezárás">×</button>
-      <img id="panel-img" alt="">
-      <div class="cap" id="panel-cap"></div>
-    </div>
+    <a id="launch-btn" href="hud.html">
+      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      Élő demo indítása — szemüveg-nézet
+    </a>
+    <div class="mic-note">Teljes képernyős HUD, mint a filmben — nyomd a mikrofont és beszélj hozzá. Mikrofon-engedélyt kér.</div>
   </div>
 </section>
 
@@ -328,233 +270,6 @@ addEventListener('scroll', () => requestAnimationFrame(onScroll), { passive: tru
 addEventListener('resize', sizeCanvas);
 sizeCanvas(); onScroll();
 
-/* ═══════════ ACT 3 · live demo ═══════════ */
-const log = document.getElementById('chat-log');
-const statusLine = document.getElementById('status-line');
-const micBtn = document.getElementById('mic-btn');
-const input = document.getElementById('text-input');
-const history = [];
-let busy = false;
-let player = new Audio();
-
-function setStatus(t, cls) {
-  statusLine.textContent = t || '';
-  statusLine.className = cls || '';
-}
-function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function md(s) {
-  return esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
-}
-function scrollLog() { log.scrollTop = log.scrollHeight; }
-
-const blockRe = /<<(OPTIONS|IMAGE|SUMMARY)>>([\s\S]*?)<<\/\1>>/g;
-function stripBlocks(s) {
-  s = s.replace(blockRe, ' ');
-  const open = s.indexOf('<<');
-  if (open !== -1) s = s.slice(0, open);
-  return s;
-}
-function parseSegments(s) {
-  const parts = []; let last = 0; let m;
-  blockRe.lastIndex = 0;
-  while ((m = blockRe.exec(s)) !== null) {
-    if (m.index > last) parts.push({ type: 'text', content: s.slice(last, m.index) });
-    parts.push({ type: m[1], content: m[2].trim() });
-    last = blockRe.lastIndex;
-  }
-  if (last < s.length) parts.push({ type: 'text', content: s.slice(last) });
-  return parts;
-}
-
-function showImage(path, caption) {
-  const panel = document.getElementById('image-panel');
-  document.getElementById('panel-img').src = IMG_BASE + path;
-  document.getElementById('panel-cap').textContent = caption || '';
-  panel.classList.add('open');
-}
-document.querySelector('#image-panel .close').onclick = () =>
-  document.getElementById('image-panel').classList.remove('open');
-
-function renderBot(el, raw) {
-  let html = '';
-  for (const part of parseSegments(raw)) {
-    if (part.type === 'text') {
-      const t = part.content.trim();
-      if (t) html += `<div>${md(t)}</div>`;
-    } else if (part.type === 'OPTIONS') {
-      try {
-        const opts = JSON.parse(part.content);
-        html += '<div class="opts">' + opts.map(o =>
-          `<button class="opt-chip" data-label="${esc(o.label)}">${o.emoji ? esc(o.emoji) + ' ' : ''}${esc(o.label)}</button>`
-        ).join('') + '</div>';
-      } catch {}
-    } else if (part.type === 'IMAGE') {
-      try {
-        const im = JSON.parse(part.content);
-        html += `<button class="img-chip" data-path="${esc(im.path)}" data-cap="${esc(im.caption || im.alt || '')}">` +
-          `<svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>` +
-          `${esc(im.caption || im.alt || 'Ábra megnyitása')}</button>`;
-      } catch {}
-    } else if (part.type === 'SUMMARY') {
-      try {
-        const sc = JSON.parse(part.content);
-        html += `<div class="summary-card"><div class="sc-head"><span class="sc-title">${esc(sc.title || 'Munkalap')}</span>` +
-          `<span class="sc-badge">${esc(sc.status || 'LEZÁRVA')}</span></div><ul>` +
-          (sc.items || []).map(i => `<li>${esc(i)}</li>`).join('') + '</ul>' +
-          (sc.note ? `<div class="sc-note">${esc(sc.note)}</div>` : '') + '</div>';
-      } catch {}
-    }
-  }
-  el.innerHTML = html;
-  el.querySelectorAll('.opt-chip').forEach(b => b.onclick = () => { if (!busy) sendMessage(b.dataset.label); });
-  el.querySelectorAll('.img-chip').forEach(b => {
-    b.onclick = () => showImage(b.dataset.path, b.dataset.cap);
-  });
-  // az első kép automatikusan kinyílik — a lényeg: a kép KÜLÖN, nagyban
-  const first = el.querySelector('.img-chip');
-  if (first) showImage(first.dataset.path, first.dataset.cap);
-}
-
-function addMsg(cls) {
-  const el = document.createElement('div');
-  el.className = 'msg ' + cls;
-  log.appendChild(el); scrollLog();
-  return el;
-}
-
-async function speak(raw) {
-  let t = stripBlocks(raw).replace(/\*\*/g, '').replace(/\s+/g, ' ').trim();
-  if (!t) return;
-  if (t.length > 580) t = t.slice(0, 580);
-  try {
-    const r = await fetch(PROXY + '/tts', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: t }),
-    });
-    if (!r.ok) return;
-    const blob = await r.blob();
-    player.src = URL.createObjectURL(blob);
-    setStatus('Beszél…', 'active');
-    player.onended = () => setStatus('');
-    await player.play().catch(() => setStatus(''));
-  } catch { setStatus(''); }
-}
-
-async function sendMessage(text) {
-  if (busy || !text.trim()) return;
-  busy = true;
-  player.pause();
-  const userEl = addMsg('user');
-  userEl.textContent = text;
-  history.push({ role: 'user', content: text });
-  const botEl = addMsg('bot');
-  botEl.innerHTML = '<div style="opacity:.5">…</div>';
-  setStatus('Gondolkodik…', 'active');
-
-  let full = '';
-  try {
-    const r = await fetch(PROXY + '/chat', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: history.slice(-20) }),
-    });
-    if (r.status === 429) throw new Error('rate');
-    if (!r.ok) throw new Error('http' + r.status);
-    const reader = r.body.getReader();
-    const dec = new TextDecoder();
-    let buf = '';
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += dec.decode(value, { stream: true });
-      const lines = buf.split('\n'); buf = lines.pop();
-      for (const line of lines) {
-        if (!line.startsWith('data:')) continue;
-        let ev; try { ev = JSON.parse(line.slice(5)); } catch { continue; }
-        if (ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'text_delta') {
-          full += ev.delta.text;
-          const live = stripBlocks(full).trim();
-          if (live) { botEl.innerHTML = `<div>${md(live)}</div>`; scrollLog(); }
-        } else if (ev.type === 'error') {
-          throw new Error(ev.error && ev.error.type || 'stream');
-        }
-      }
-    }
-    history.push({ role: 'assistant', content: full });
-    renderBot(botEl, full);
-    scrollLog();
-    setStatus('');
-    speak(full);
-  } catch (e) {
-    botEl.innerHTML = `<div style="color:var(--red)">${
-      e.message === 'rate' ? 'Sok kérés fut egyszerre — várj egy percet, aztán próbáld újra.'
-      : 'Hoppá, megszakadt a kapcsolat. Próbáld újra.'}</div>`;
-    history.pop();
-    setStatus('', '');
-  }
-  busy = false;
-}
-
-/* text input */
-document.getElementById('send-btn').onclick = () => { const t = input.value; input.value = ''; sendMessage(t); };
-input.addEventListener('keydown', e => { if (e.key === 'Enter') { const t = input.value; input.value = ''; sendMessage(t); } });
-
-/* ---- push-to-talk ---- */
-let rec = null, chunks = [], recStream = null;
-function recMime() {
-  if (window.MediaRecorder) {
-    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) return 'audio/webm;codecs=opus';
-    if (MediaRecorder.isTypeSupported('audio/mp4')) return 'audio/mp4';
-  }
-  return '';
-}
-async function startRec() {
-  if (busy || rec) return;
-  try {
-    recStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  } catch {
-    setStatus('Mikrofon-engedély kell a hangvezérléshez', 'err');
-    return;
-  }
-  chunks = [];
-  const mime = recMime();
-  rec = new MediaRecorder(recStream, mime ? { mimeType: mime } : undefined);
-  rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
-  rec.onstop = async () => {
-    recStream.getTracks().forEach(t => t.stop());
-    micBtn.classList.remove('rec');
-    const type = rec.mimeType || 'audio/webm';
-    rec = null;
-    const blob = new Blob(chunks, { type });
-    if (blob.size < 2000) { setStatus(''); return; }
-    setStatus('Átírás…', 'active');
-    const fd = new FormData();
-    fd.append('file', blob, type.includes('mp4') ? 'q.m4a' : 'q.webm');
-    try {
-      const r = await fetch(PROXY + '/stt', { method: 'POST', body: fd });
-      if (r.status === 429) { setStatus('Sok kérés — várj egy percet', 'err'); return; }
-      const { text } = await r.json();
-      const clean = (text || '').replace(/\[[^\]]*\]/g, '').trim();
-      setStatus('');
-      if (clean) sendMessage(clean);
-      else setStatus('Nem hallottam — próbáld újra', 'err');
-    } catch { setStatus('Az átírás nem sikerült', 'err'); }
-  };
-  rec.start();
-  micBtn.classList.add('rec');
-  setStatus('Hallgatlak…', 'active');
-}
-function stopRec() { if (rec && rec.state === 'recording') rec.stop(); }
-micBtn.addEventListener('pointerdown', e => { e.preventDefault(); startRec(); });
-micBtn.addEventListener('pointerup', stopRec);
-micBtn.addEventListener('pointerleave', stopRec);
-micBtn.addEventListener('contextmenu', e => e.preventDefault());
-
-/* ---- nyitó üzenet ---- */
-const GREETING = 'Szia! A műhely Maintenance Copilotja vagyok — most épp egy MIKA-6E KON kazán gépkönyvével. Miben segítsek?\n' +
-  '<<OPTIONS>>\n[{"label":"Hibakódot látok a kijelzőn","emoji":"🔥"},{"label":"Karbantartást végeznék","emoji":"🛠️"},{"label":"Műszaki kérdésem van","emoji":"📖"}]\n<</OPTIONS>>';
-history.push({ role: 'assistant', content: GREETING });
-renderBot(addMsg('bot'), GREETING);
-document.getElementById('image-panel').classList.remove('open');
 </script>
 </body>
 </html>
