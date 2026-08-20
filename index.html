@@ -144,7 +144,9 @@ section.block{padding:120px 24px;position:relative}
 footer{padding:70px 24px 46px;text-align:center;border-top:1px solid rgba(255,255,255,.06)}
 footer .rings{opacity:.5;margin-bottom:18px}
 footer p{font-size:13px;color:var(--txt-dim);letter-spacing:.08em;font-weight:300}
-footer .zel{margin-top:6px;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:rgba(255,255,255,.35)}
+footer .zel{margin-top:16px}
+footer .zel img{height:32px;width:auto;opacity:.75;transition:opacity .25s var(--ease)}
+footer .zel a:hover img{opacity:1}
 </style>
 </head>
 <body>
@@ -240,7 +242,7 @@ footer .zel{margin-top:6px;font-size:12px;letter-spacing:.3em;text-transform:upp
     </svg>
   </div>
   <p>AUDI Maintenance Copilot — demo</p>
-  <p class="zel">ZEL Group</p>
+  <div class="zel"><a href="https://zel-group.com" target="_blank" rel="noopener"><img src="assets/zel-logo-white.svg" alt="ZEL Group — Zero Emission Leadership"></a></div>
 </footer>
 
 <script>
