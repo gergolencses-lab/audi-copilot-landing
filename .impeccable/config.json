@@ -20,6 +20,24 @@
         ],
         "createdAt": "2026-08-20T15:22:32.242Z",
         "reason": "Smoke Glass AR-HUD design-nyelv, Gergo a sessionben hagyta jova (fustüveg/ice-glow) — azonos ignore el a ar-vision templatekre is"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "hud.html"
+        ],
+        "createdAt": "2026-08-20T16:51:29.282Z",
+        "reason": "Smoke Glass AR-HUD design-nyelv — ugyanaz a Gergő által jóváhagyott kivétel, mint index.html-en"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "hud.html"
+        ],
+        "createdAt": "2026-08-20T16:51:29.308Z",
+        "reason": "dg-img src-t a showDiagram() tolti be futasidoben, a panel addig rejtett"
       }
     ]
   }
